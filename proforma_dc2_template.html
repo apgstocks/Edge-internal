@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+@font-face { font-family:'Poppins'; font-weight:800; src: url('fonts/Poppins-Bold.ttf'); }
+@font-face { font-family:'Poppins'; font-weight:700; src: url('fonts/Poppins-Bold.ttf'); }
+@font-face { font-family:'Poppins'; font-weight:500; src: url('fonts/Poppins-Medium.ttf'); }
+@font-face { font-family:'DM Sans'; font-weight:400; src: url('fonts/DMSans-Regular.ttf'); }
+@font-face { font-family:'DM Sans'; font-weight:500; src: url('fonts/DMSans-Regular.ttf'); }
+@font-face { font-family:'DM Sans'; font-weight:600; src: url('fonts/DMSans-SemiBold.ttf'); }
+@font-face { font-family:'DM Sans'; font-weight:700; src: url('fonts/DMSans-Bold.ttf'); }
+@font-face { font-family:'IBM Plex Mono'; font-weight:400; src: url('fonts/IBMPlexMono-Regular.ttf'); }
+@font-face { font-family:'IBM Plex Mono'; font-weight:600; src: url('fonts/IBMPlexMono-Bold.ttf'); }
+:root{
+  --steel-950:#0C0E10;--steel-900:#14181B;--steel-800:#1E2429;--steel-700:#2B3239;
+  --steel-600:#3C454D;--steel-500:#57616A;--steel-400:#7E8891;--steel-300:#A7B0B7;
+  --steel-200:#CBD1D6;--steel-100:#E5E9EC;--steel-50:#F3F5F7;
+  --leaf-50:#ECF8EA;--leaf-100:#D3F0CD;--leaf-200:#ABE2A1;--leaf-300:#7FD172;
+  --leaf-400:#57BE49;--leaf-500:#3DA836;--leaf-600:#2E861F;--leaf-700:#226620;--leaf-800:#194C18;
+  --accent:var(--leaf-500);--accent-hover:var(--leaf-600);--accent-active:var(--leaf-700);
+  --font-display:'Poppins',sans-serif; --font-sans:'DM Sans',sans-serif; --font-mono:'IBM Plex Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans);color:var(--steel-700);width:816px}
+@page{size:816px 1500px;margin:0}
+</style>
+</head>
+<body>
+<div style="width:816px;background:#fff;">
+
+  <div style="position:relative;overflow:hidden;background:linear-gradient(160deg,var(--leaf-50) 0%,#ffffff 55%,var(--leaf-50) 100%);padding:30px 48px 28px;">
+
+    <div style="position:relative;display:flex;justify-content:space-between;align-items:center;gap:28px;">
+      <div style="display:flex;align-items:center;gap:13px;">
+        <svg width="46" height="46" viewBox="0 0 48 48" style="flex:none;display:block;">
+          <rect x="1.5" y="1.5" width="45" height="45" rx="13" fill="#3DA836"></rect>
+          <rect x="13" y="13.5" width="21" height="5" rx="2.5" fill="#fff"></rect>
+          <rect x="13" y="21.5" width="15" height="5" rx="2.5" fill="#fff"></rect>
+          <rect x="13" y="29.5" width="21" height="5" rx="2.5" fill="#fff"></rect>
+          <path d="M37 11.5c2.4 0 4.4 2 4.4 4.4 0 2.4-2 4.4-4.4 4.4-.6-2.5-1.9-3.8-4.4-4.4 2.5-.6 3.8-1.9 4.4-4.4z" fill="#ABE2A1"></path>
+        </svg>
+        <div style="display:flex;flex-direction:column;line-height:1;">
+          <span style="font-family:var(--font-display);font-weight:800;font-size:21px;letter-spacing:-0.02em;color:var(--steel-950);">Edge Metals</span>
+          <span style="font-family:var(--font-sans);font-size:10px;font-weight:700;letter-spacing:0.18em;color:var(--accent);margin-top:4px;text-transform:uppercase;white-space:nowrap;">Inc. &middot; Global Scrap</span>
+        </div>
+      </div>
+      <div style="text-align:right;font-family:var(--font-mono);font-size:10.5px;line-height:1.7;color:var(--steel-600);white-space:nowrap;">
+        <div>1848 E 55th Street, Los Angeles, CA 90058, USA</div>
+        <div>+1 (310) 938-2525 &nbsp;&middot;&nbsp; +1 (213) 507-5755</div>
+        <div style="color:var(--accent-hover);font-weight:500;">bose@edgemetals.com &nbsp;&middot;&nbsp; www.edgemetals.com</div>
+      </div>
+    </div>
+
+    <div style="position:relative;display:flex;align-items:center;margin-top:18px;margin-bottom:22px;">
+      <div style="height:2px;width:56px;background:var(--leaf-500);"></div>
+      <div style="height:1px;flex:1;background:rgba(167,176,183,0.55);"></div>
+    </div>
+
+    <div style="position:relative;display:flex;justify-content:space-between;align-items:flex-start;gap:28px;">
+      <div>
+        <div style="font-family:var(--font-mono);font-size:10.5px;font-weight:500;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent-hover);">// For Customs &amp; Banking Purposes</div>
+        <h1 style="margin:10px 0 0;font-family:var(--font-display);font-weight:800;font-size:38px;line-height:1;letter-spacing:-0.025em;color:var(--steel-950);text-transform:uppercase;">Proforma <span style="color:var(--accent);">Invoice</span></h1>
+      </div>
+      <div style="flex:0 0 268px;background:#fff;border:1px solid var(--leaf-200);border-radius:8px;overflow:hidden;">
+        <div style="display:flex;justify-content:space-between;gap:12px;padding:8px 14px;border-bottom:1px solid var(--leaf-100);">
+          <span style="font-family:var(--font-mono);font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--steel-400);white-space:nowrap;">Invoice No</span>
+          <span style="font-family:var(--font-mono);font-size:10px;font-weight:500;color:var(--steel-950);text-align:right;word-break:break-all;line-height:1.4;">{{ inv_no }}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;gap:12px;padding:8px 14px;border-bottom:1px solid var(--leaf-100);">
+          <span style="font-family:var(--font-mono);font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--steel-400);">Invoice Date</span>
+          <span style="font-family:var(--font-mono);font-size:11px;font-weight:500;color:var(--steel-950);">{{ inv_date }}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;gap:12px;padding:8px 14px;">
+          <span style="font-family:var(--font-mono);font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--steel-400);">Reference #</span>
+          <span style="font-family:var(--font-mono);font-size:11px;font-weight:500;color:var(--steel-950);">{{ reference }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="padding:24px 48px 56px;">
+
+    <div style="display:flex;gap:16px;">
+      <div style="flex:1;background:var(--leaf-50);border:1px solid var(--leaf-100);border-radius:8px;padding:16px 18px;">
+        <div style="font-family:var(--font-mono);font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent-hover);margin-bottom:7px;">&#9679; &nbsp;Seller</div>
+        <div style="font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--steel-950);margin-bottom:5px;">Edge Metals Inc.</div>
+        <div style="font-size:12.5px;line-height:1.6;color:var(--steel-600);">14750 Devonshire Ln, Frisco, TX 75035, United States</div>
+        <div style="font-family:var(--font-mono);font-size:11px;color:var(--steel-500);margin-top:5px;">Tel (310)&nbsp;938-2525 &middot; Fax (425)&nbsp;940-9408</div>
+      </div>
+      <div style="flex:1;background:var(--steel-50);border:1px solid var(--steel-200);border-radius:8px;padding:16px 18px;">
+        <div style="font-family:var(--font-mono);font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--steel-600);margin-bottom:7px;">&#9679; &nbsp;Buyer / Consignee</div>
+        <div style="font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--steel-950);margin-bottom:5px;">{{ consignee_name }}</div>
+        <div style="font-size:12.5px;line-height:1.6;color:var(--steel-600);">{{ consignee_address_line }}</div>
+        <div style="font-family:var(--font-mono);font-size:11px;color:var(--steel-500);margin-top:5px;">{{ consignee_contact_line }}</div>
+      </div>
+    </div>
+
+    <div style="margin-top:18px;border:1px solid var(--steel-200);border-radius:8px;overflow:hidden;">
+      <div style="display:flex;border-bottom:1px solid var(--steel-100);">
+        {% for lbl, val in terms_cells[:4] %}
+        <div style="flex:1;padding:11px 15px;{{ 'border-right:1px solid var(--steel-100);' if not loop.last else '' }}">
+          <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--steel-400);margin-bottom:3px;">{{ lbl }}</div>
+          <div style="font-size:12px;font-weight:600;color:var(--steel-900);">{{ val }}</div>
+        </div>
+        {% endfor %}
+      </div>
+      <div style="display:flex;">
+        {% for lbl, val in terms_cells[4:] %}
+        <div style="flex:1;padding:11px 15px;{{ 'border-right:1px solid var(--steel-100);' if not loop.last else '' }}">
+          <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--steel-400);margin-bottom:3px;">{{ lbl }}</div>
+          <div style="font-size:12px;font-weight:600;color:var(--steel-900);">{{ val }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:22px;">
+      <thead>
+        <tr style="background:var(--leaf-600);">
+          <th style="text-align:left;padding:12px 14px;font-family:var(--font-sans);font-size:11px;letter-spacing:0.03em;color:#fff;font-weight:600;width:116px;border-top-left-radius:8px;">Container No</th>
+          <th style="text-align:left;padding:12px 14px;font-family:var(--font-sans);font-size:11px;letter-spacing:0.03em;color:#fff;font-weight:600;">Description</th>
+          <th style="text-align:right;padding:12px 14px;font-family:var(--font-sans);font-size:11px;letter-spacing:0.03em;color:#fff;font-weight:600;white-space:nowrap;">Qty (MT)</th>
+          <th style="text-align:right;padding:12px 14px;font-family:var(--font-sans);font-size:11px;letter-spacing:0.03em;color:#fff;font-weight:600;white-space:nowrap;">Rate US$/MT</th>
+          <th style="text-align:right;padding:12px 14px;font-family:var(--font-sans);font-size:11px;letter-spacing:0.03em;color:#fff;font-weight:600;white-space:nowrap;border-top-right-radius:8px;">Amount US$</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for cont in containers %}
+          {% set outer_loop = loop %}
+          {% for item in cont['items'] %}
+        <tr>
+          {% if loop.first %}
+          <td rowspan="{{ cont['items']|length }}" style="padding:11px 14px;border-bottom:{{ '2px solid var(--leaf-600)' if outer_loop.last else '1px solid var(--steel-200)' }};border-right:1px solid var(--steel-100);vertical-align:top;background:var(--leaf-50);font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--leaf-700);">{{ cont.container_no }}</td>
+          {% endif %}
+          <td style="padding:11px 14px;border-bottom:{{ '2px solid var(--leaf-600)' if (outer_loop.last and loop.last) else '1px solid var(--steel-100)' }};color:var(--steel-800);">{{ item.desc }}</td>
+          <td style="padding:11px 14px;border-bottom:{{ '2px solid var(--leaf-600)' if (outer_loop.last and loop.last) else '1px solid var(--steel-100)' }};text-align:right;font-family:var(--font-mono);color:var(--steel-700);">{{ "%.2f"|format(item.qty) }}</td>
+          <td style="padding:11px 14px;border-bottom:{{ '2px solid var(--leaf-600)' if (outer_loop.last and loop.last) else '1px solid var(--steel-100)' }};text-align:right;font-family:var(--font-mono);color:var(--steel-700);">${{ "%.0f"|format(item.rate) }}</td>
+          <td style="padding:11px 14px;border-bottom:{{ '2px solid var(--leaf-600)' if (outer_loop.last and loop.last) else '1px solid var(--steel-100)' }};text-align:right;font-family:var(--font-mono);font-weight:500;color:var(--steel-950);">${{ "{:,.2f}".format(item.qty*item.rate) }}</td>
+        </tr>
+          {% endfor %}
+        {% endfor %}
+        <tr>
+          <td colspan="2" style="padding:10px 14px;font-family:var(--font-mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--steel-500);">Total Quantity</td>
+          <td style="padding:10px 14px;text-align:right;font-family:var(--font-mono);font-weight:600;color:var(--leaf-700);">{{ "%.2f"|format(total_qty) }}</td>
+          <td style="padding:10px 14px;"></td>
+          <td style="padding:10px 14px;"></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div style="display:flex;gap:24px;margin-top:14px;align-items:flex-start;">
+      <div style="flex:1;padding-top:6px;">
+        <div style="font-family:var(--font-mono);font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--steel-400);margin-bottom:6px;">Amount in Words</div>
+        <div style="font-size:13px;font-weight:600;color:var(--steel-900);line-height:1.5;max-width:330px;">{{ amount_in_words }}</div>
+      </div>
+      <div style="width:304px;flex:none;">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 2px;border-bottom:1px solid var(--steel-100);">
+          <span style="font-size:12.5px;color:var(--steel-600);">Goods Value ({{ trade_terms_short }})</span>
+          <span style="font-family:var(--font-mono);font-size:13px;font-weight:500;color:var(--steel-950);">${{ "{:,.2f}".format(total_due) }}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 2px;">
+          <span style="font-size:12.5px;color:var(--steel-600);">Ocean Freight</span>
+          <span style="display:inline-flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:11px;font-weight:600;color:var(--accent-hover);">
+            <span style="width:6px;height:6px;border-radius:50%;background:var(--leaf-500);"></span>{{ freight_status }}
+          </span>
+        </div>
+        <div style="margin-top:8px;border-radius:8px;overflow:hidden;background:var(--leaf-700);">
+          <div style="height:4px;background:var(--leaf-400);"></div>
+          <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;padding:13px 16px 14px;">
+            <span style="font-family:var(--font-mono);font-size:10.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--leaf-200);padding-bottom:4px;">Total Due</span>
+            <span style="font-family:var(--font-display);font-weight:800;font-size:27px;letter-spacing:-0.02em;color:#fff;">${{ "{:,.2f}".format(total_due) }}</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div style="margin-top:24px;padding:13px 16px;background:var(--leaf-50);border:1px solid var(--leaf-100);border-radius:8px;">
+      <span style="font-family:var(--font-mono);font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent-hover);">Declaration &nbsp;//&nbsp; </span>
+      <span style="font-size:12px;color:var(--steel-600);line-height:1.6;">We declare that this invoice shows the actual price of the goods described and that all particulars are true and correct.</span>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;margin-top:38px;">
+      <div style="width:calc(50% - 40px);">
+        <div style="font-family:var(--font-mono);font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--steel-400);margin-bottom:4px;">Seller</div>
+        <div style="font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--steel-950);margin-bottom:8px;">Edge Metals Inc.</div>
+        {% if signature_img %}
+        <img src="{{ signature_img }}" style="height:34px;display:block;margin-bottom:2px;" />
+        {% else %}
+        <div style="height:34px;margin-bottom:2px;"></div>
+        {% endif %}
+        <div style="border-top:2px solid var(--leaf-500);padding-top:6px;font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--steel-400);">Authorized Signature</div>
+      </div>
+      <div style="width:calc(50% - 40px);">
+        <div style="font-family:var(--font-mono);font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--steel-400);margin-bottom:4px;">Buyer</div>
+        <div style="font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--steel-950);margin-bottom:44px;">{{ consignee_name }}</div>
+        <div style="border-top:2px solid var(--leaf-500);padding-top:6px;font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--steel-400);">Authorized Signature</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:13px 48px;background:var(--steel-950);font-family:var(--font-mono);font-size:9.5px;letter-spacing:0.08em;text-transform:uppercase;color:var(--steel-400);">
+    <span style="color:var(--leaf-400);">&#9679; &nbsp;Edge Metals Inc. &middot; Global Scrap &middot; Est. 2008</span>
+    <span>Proforma Invoice &middot; Page 1 of 1</span>
+  </div>
+
+</div>
+</body>
+</html>
