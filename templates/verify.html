@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Edge Metals — Invoice Verification</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Manrope',sans-serif;background:#f8fafc;color:#0f172a;min-height:100vh;}
+body::before{content:'';position:fixed;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,#2E6DA4,#4a9fd4,#2E6DA4);background-size:200%;animation:shimmer 3s linear infinite;}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:18px 40px;background:white;border-bottom:1px solid #e2e8f0;}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;}
+.logo-sq{width:32px;height:32px;background:#0ea5e9;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:white;}
+.brand-name{font-size:14px;font-weight:700;color:#1e293b;}
+.back-link{font-size:13px;font-weight:500;color:#0ea5e9;text-decoration:none;}
+.back-link:hover{text-decoration:underline;}
+
+.page{max-width:1000px;margin:40px auto;padding:0 24px 60px;}
+h1{font-size:24px;font-weight:800;margin-bottom:4px;}
+.page-sub{font-size:14px;color:#64748b;margin-bottom:24px;}
+
+/* ── Tabs ── */
+.tabs{display:flex;gap:0;margin-bottom:28px;border-bottom:2px solid #e2e8f0;}
+.tab{padding:10px 24px;font-size:14px;font-weight:600;color:#64748b;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all 0.2s;}
+.tab:hover{color:#0f172a;}
+.tab.active{color:#0ea5e9;border-bottom-color:#0ea5e9;}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+
+.form-card{background:white;border:1.5px solid #e2e8f0;border-radius:14px;padding:28px;margin-bottom:24px;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;}
+.form-group label{display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;}
+select,input[type=text]{width:100%;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-family:'Manrope',sans-serif;font-size:13px;font-weight:500;background:white;outline:none;cursor:pointer;transition:border-color 0.2s;}
+select:focus,input[type=text]:focus{border-color:#0ea5e9;}
+
+.file-drop{border:2px dashed #cbd5e1;border-radius:10px;padding:32px;text-align:center;cursor:pointer;transition:all 0.2s;position:relative;}
+.file-drop:hover,.file-drop.drag{border-color:#0ea5e9;background:#f0f9ff;}
+.file-drop input{position:absolute;inset:0;opacity:0;cursor:pointer;}
+.drop-icon{font-size:28px;margin-bottom:8px;}
+.drop-text{font-size:14px;font-weight:600;color:#0f172a;margin-bottom:4px;}
+.drop-sub{font-size:12px;color:#94a3b8;}
+.file-list{margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;}
+.file-chip{background:#f1f5f9;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:500;color:#475569;}
+
+.btn{padding:12px 28px;border:none;border-radius:10px;font-family:'Manrope',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;}
+.btn-verify{background:#0ea5e9;color:white;width:100%;margin-top:20px;}
+.btn-verify:hover{background:#0284c7;}
+.btn-verify:disabled{opacity:0.5;cursor:not-allowed;}
+.btn-commission{background:#7c3aed;color:white;width:100%;margin-top:20px;}
+.btn-commission:hover{background:#6d28d9;}
+.btn-commission:disabled{opacity:0.5;cursor:not-allowed;}
+
+.loading{display:none;text-align:center;padding:40px;color:#64748b;}
+.spinner{width:24px;height:24px;border:3px solid #e2e8f0;border-top-color:#0ea5e9;border-radius:50%;animation:spin 0.7s linear infinite;margin:0 auto 12px;}
+.spinner-purple{border-top-color:#7c3aed;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.info-msg{background:#f0f9ff;border:1px solid #bae6fd;color:#0369a1;padding:12px 16px;border-radius:10px;font-size:13px;margin-bottom:16px;display:none;}
+
+.results{display:none;}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;}
+.stat-box{background:white;border:1.5px solid #e2e8f0;border-radius:12px;padding:18px 20px;}
+.stat-val{font-size:28px;font-weight:800;line-height:1;}
+.stat-lbl{font-size:11px;color:#64748b;font-weight:500;margin-top:4px;text-transform:uppercase;letter-spacing:0.5px;}
+.stat-box.green .stat-val{color:#10b981;}
+.stat-box.red .stat-val{color:#ef4444;}
+.stat-box.yellow .stat-val{color:#f59e0b;}
+.stat-box.purple .stat-val{color:#7c3aed;}
+
+.result-section{background:white;border:1.5px solid #e2e8f0;border-radius:14px;overflow:hidden;margin-bottom:16px;}
+.result-head{padding:16px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #f1f5f9;}
+.result-head-title{font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px;}
+.result-head-sub{font-size:12px;color:#94a3b8;}
+.badge{font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;}
+.badge-red{background:#fef2f2;color:#dc2626;}
+.badge-yellow{background:#fffbeb;color:#d97706;}
+.badge-green{background:#f0fdf4;color:#16a34a;}
+.badge-purple{background:#f5f3ff;color:#7c3aed;}
+
+table{width:100%;border-collapse:collapse;}
+th{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#94a3b8;padding:10px 16px;text-align:left;border-bottom:1px solid #f1f5f9;background:#fafafa;}
+td{padding:10px 16px;font-size:13px;font-weight:500;border-bottom:1px solid #f8fafc;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:#fafafa;}
+.td-mismatch{color:#dc2626;font-weight:600;}
+.td-sheet{color:#d97706;font-weight:600;}
+.td-diff{color:#7c3aed;font-weight:700;}
+.td-date{color:#64748b;font-size:12px;}
+.td-ok{color:#10b981;font-weight:600;}
+.empty-row td{padding:24px;text-align:center;color:#94a3b8;font-size:13px;}
+.period-label{font-size:13px;color:#64748b;margin-bottom:16px;font-weight:500;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="/" class="brand">
+    <div class="logo-sq">✓</div>
+    <span class="brand-name">Edge Metals Inc.</span>
+  </a>
+  <a href="/" class="back-link">← Back to Portal</a>
+</div>
+
+<div class="page">
+  <h1>Invoice Verification</h1>
+  <p class="page-sub">Cross-check carrier statements and commission amounts against your Google Sheets records.</p>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('zimex')">ZIMEX Freight</div>
+    <div class="tab" onclick="switchTab('commission')">Commission</div>
+  </div>
+
+  <!-- ── ZIMEX Tab ── -->
+  <div id="tab-zimex" class="tab-panel active">
+    <div class="form-card">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Invoice Year</label>
+          <select id="yearSel">
+            <option value="2025">2025</option>
+            <option value="2026" selected>2026</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Invoice Month</label>
+          <select id="monthSel">
+            <option value="1">January</option>
+            <option value="2">February</option>
+            <option value="3">March</option>
+            <option value="4">April</option>
+            <option value="5" selected>May</option>
+            <option value="6">June</option>
+            <option value="7">July</option>
+            <option value="8">August</option>
+            <option value="9">September</option>
+            <option value="10">October</option>
+            <option value="11">November</option>
+            <option value="12">December</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Carrier Statement PDFs</label>
+        <div class="file-drop" id="fileDrop">
+          <input type="file" id="pdfFiles" multiple accept=".pdf" onchange="updateFileList()"/>
+          <div class="drop-icon">📄</div>
+          <div class="drop-text">Drop PDFs here or click to browse</div>
+          <div class="drop-sub">ZIMEX GLT statement PDFs · Multiple files supported</div>
+          <div class="file-list" id="fileList"></div>
+        </div>
+      </div>
+      <button class="btn btn-verify" id="verifyBtn" onclick="doVerify()">Run Verification</button>
+    </div>
+
+    <div id="infoMsg" class="info-msg"></div>
+    <div id="loadingZimex" class="loading">
+      <div class="spinner"></div>
+      Analyzing PDFs and comparing against Google Sheets...
+    </div>
+    <div id="resultsZimex" class="results"></div>
+  </div>
+
+  <!-- ── Commission Tab ── -->
+  <div id="tab-commission" class="tab-panel">
+    <div class="form-card">
+      <div class="form-group" style="margin-bottom:20px;">
+        <label>Upload Commission Excel File (.xlsx)</label>
+        <div class="file-drop" id="commFileDrop">
+          <input type="file" id="commFile" accept=".xlsx" onchange="updateCommFileLabel()"/>
+          <div class="drop-icon">📊</div>
+          <div class="drop-text">Drop .xlsx file here or click to browse</div>
+          <div class="drop-sub">Column P must contain commission amounts · Column A must contain container numbers</div>
+          <div class="file-list" id="commFileList"></div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Tolerance (allowable difference $)</label>
+        <input type="text" id="tolerance" value="0.01" style="max-width:160px;cursor:text;">
+      </div>
+      <button class="btn btn-commission" id="commBtn" onclick="doCommissionVerify()">Run Commission Check</button>
+    </div>
+
+    <div id="loadingComm" class="loading">
+      <div class="spinner spinner-purple"></div>
+      Reading Excel and comparing commissions against Google Sheets...
+    </div>
+    <div id="resultsComm" class="results"></div>
+  </div>
+</div>
+
+<script>
+const MONTH_NAMES = ['','January','February','March','April','May','June',
+                     'July','August','September','October','November','December'];
+
+// ── Tab switching ─────────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    t.classList.toggle('active', ['zimex','commission'][i] === name);
+  });
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+// ── ZIMEX tab ─────────────────────────────────────────────────────────────────
+function updateFileList() {
+  const files = document.getElementById('pdfFiles').files;
+  document.getElementById('fileList').innerHTML = Array.from(files).map(f =>
+    `<span class="file-chip">📄 ${f.name}</span>`).join('');
+}
+
+const drop = document.getElementById('fileDrop');
+drop.addEventListener('dragover',  e => { e.preventDefault(); drop.classList.add('drag'); });
+drop.addEventListener('dragleave', () => drop.classList.remove('drag'));
+drop.addEventListener('drop', e => {
+  e.preventDefault(); drop.classList.remove('drag');
+  document.getElementById('pdfFiles').files = e.dataTransfer.files;
+  updateFileList();
+});
+
+async function doVerify() {
+  const files = document.getElementById('pdfFiles').files;
+  if (!files.length) { alert('Please upload at least one PDF.'); return; }
+  document.getElementById('loadingZimex').style.display = 'block';
+  document.getElementById('resultsZimex').style.display = 'none';
+  document.getElementById('infoMsg').style.display      = 'none';
+  document.getElementById('verifyBtn').disabled         = true;
+
+  const fd = new FormData();
+  fd.append('year',  document.getElementById('yearSel').value);
+  fd.append('month', document.getElementById('monthSel').value);
+  Array.from(files).forEach(f => fd.append('pdf_files', f));
+
+  try {
+    const res  = await fetch('/api/verify', { method:'POST', body: fd });
+    const data = await res.json();
+    document.getElementById('loadingZimex').style.display = 'none';
+    document.getElementById('verifyBtn').disabled         = false;
+    if (data.error) { alert(data.error); return; }
+    if (data.info) {
+      const el = document.getElementById('infoMsg');
+      el.textContent = data.info; el.style.display = 'block';
+    }
+    renderZimexResults(data);
+  } catch(e) {
+    document.getElementById('loadingZimex').style.display = 'none';
+    document.getElementById('verifyBtn').disabled         = false;
+    alert('Error running verification. Please try again.');
+  }
+}
+
+function renderZimexResults(d) {
+  const month  = parseInt(document.getElementById('monthSel').value);
+  const year   = document.getElementById('yearSel').value;
+  const period = `${MONTH_NAMES[month]} ${year}`;
+
+  const missingRows = d.missing && d.missing.length
+    ? d.missing.map(r => `<tr>
+        <td class="td-date">${r.date||'—'}</td>
+        <td><strong>${r.hbl}</strong></td>
+        <td class="td-mismatch">${r.pdf_amount}</td>
+        <td style="color:#94a3b8">Not in sheet</td></tr>`).join('')
+    : `<tr class="empty-row"><td colspan="4">✓ No missing HB/L numbers for ${period}</td></tr>`;
+
+  const mismatchRows = d.mismatch && d.mismatch.length
+    ? d.mismatch.map(r => `<tr>
+        <td class="td-date">${r.date||'—'}</td>
+        <td><strong>${r.hbl}</strong></td>
+        <td class="td-mismatch">${r.pdf_amount}</td>
+        <td class="td-sheet">${r.sheet_amount}</td>
+        <td class="td-diff">${r.difference}</td></tr>`).join('')
+    : `<tr class="empty-row"><td colspan="5">✓ All amounts match for ${period}</td></tr>`;
+
+  document.getElementById('resultsZimex').innerHTML = `
+    <div class="period-label">Results for <strong>${period}</strong> — ${d.total_pdf} unique HB/L numbers from PDF</div>
+    <div class="stats-row">
+      <div class="stat-box"><div class="stat-val">${d.total_pdf}</div><div class="stat-lbl">HB/L in PDF</div></div>
+      <div class="stat-box green"><div class="stat-val">${d.matched}</div><div class="stat-lbl">Matched</div></div>
+      <div class="stat-box red"><div class="stat-val">${d.missing?d.missing.length:0}</div><div class="stat-lbl">Missing in Sheet</div></div>
+      <div class="stat-box yellow"><div class="stat-val">${d.mismatch?d.mismatch.length:0}</div><div class="stat-lbl">Amount Mismatch</div></div>
+    </div>
+    <div class="result-section">
+      <div class="result-head">
+        <span class="result-head-title">Missing in Google Sheets <span class="badge badge-red">${d.missing?d.missing.length:0}</span></span>
+        <span class="result-head-sub">HB/L numbers in PDF but not found in your sheet</span>
+      </div>
+      <table><thead><tr><th>Date</th><th>HB/L Number</th><th>PDF Amount</th><th>Sheet</th></tr></thead>
+      <tbody>${missingRows}</tbody></table>
+    </div>
+    <div class="result-section">
+      <div class="result-head">
+        <span class="result-head-title">Amount Mismatches <span class="badge badge-yellow">${d.mismatch?d.mismatch.length:0}</span></span>
+        <span class="result-head-sub">HB/L found in both but totals differ</span>
+      </div>
+      <table><thead><tr><th>Date</th><th>HB/L Number</th><th>PDF Total</th><th>Sheet Total</th><th>Difference</th></tr></thead>
+      <tbody>${mismatchRows}</tbody></table>
+    </div>`;
+  document.getElementById('resultsZimex').style.display = 'block';
+  document.getElementById('resultsZimex').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+// ── Commission tab ────────────────────────────────────────────────────────────
+function updateCommFileLabel() {
+  const files = document.getElementById('commFile').files;
+  document.getElementById('commFileList').innerHTML = Array.from(files).map(f =>
+    `<span class="file-chip">📊 ${f.name}</span>`).join('');
+}
+
+const commDrop = document.getElementById('commFileDrop');
+commDrop.addEventListener('dragover',  e => { e.preventDefault(); commDrop.classList.add('drag'); });
+commDrop.addEventListener('dragleave', () => commDrop.classList.remove('drag'));
+commDrop.addEventListener('drop', e => {
+  e.preventDefault(); commDrop.classList.remove('drag');
+  document.getElementById('commFile').files = e.dataTransfer.files;
+  updateCommFileLabel();
+});
+
+async function doCommissionVerify() {
+  const file = document.getElementById('commFile').files[0];
+  if (!file) { alert('Please upload an Excel file.'); return; }
+
+  document.getElementById('loadingComm').style.display  = 'block';
+  document.getElementById('resultsComm').style.display  = 'none';
+  document.getElementById('commBtn').disabled           = true;
+
+  const tolerance = parseFloat(document.getElementById('tolerance').value) || 0.01;
+  const fd = new FormData();
+  fd.append('xlsx_file',  file);
+  fd.append('tolerance',  tolerance);
+
+  try {
+    const res  = await fetch('/api/verify-commission', { method:'POST', body: fd });
+    const data = await res.json();
+    document.getElementById('loadingComm').style.display = 'none';
+    document.getElementById('commBtn').disabled          = false;
+    if (data.error) { alert(data.error); return; }
+    renderCommissionResults(data);
+  } catch(e) {
+    document.getElementById('loadingComm').style.display = 'none';
+    document.getElementById('commBtn').disabled          = false;
+    alert('Error running commission check. Please try again.');
+  }
+}
+
+function renderCommissionResults(d) {
+  const missingRows = d.missing && d.missing.length
+    ? d.missing.map(r => `<tr>
+        <td><strong>${r.container_no}</strong></td>
+        <td class="td-mismatch">${r.uploaded_amount}</td>
+        <td style="color:#94a3b8">Not in sheet</td>
+        <td>—</td></tr>`).join('')
+    : `<tr class="empty-row"><td colspan="4">✓ All containers found in sheet</td></tr>`;
+
+  const mismatchRows = d.mismatch && d.mismatch.length
+    ? d.mismatch.map(r => `<tr>
+        <td><strong>${r.container_no}</strong></td>
+        <td class="td-mismatch">${r.uploaded_amount}</td>
+        <td class="td-sheet">${r.sheet_amount}</td>
+        <td class="td-diff">${r.difference}</td></tr>`).join('')
+    : `<tr class="empty-row"><td colspan="4">✓ All commission amounts match</td></tr>`;
+
+  document.getElementById('resultsComm').innerHTML = `
+    <div class="period-label">${d.total_uploaded} containers from uploaded file · tolerance $${d.tolerance}</div>
+    <div class="stats-row">
+      <div class="stat-box"><div class="stat-val">${d.total_uploaded}</div><div class="stat-lbl">In Uploaded File</div></div>
+      <div class="stat-box green"><div class="stat-val">${d.matched}</div><div class="stat-lbl">Matched</div></div>
+      <div class="stat-box red"><div class="stat-val">${d.missing?d.missing.length:0}</div><div class="stat-lbl">Missing in Sheet</div></div>
+      <div class="stat-box yellow"><div class="stat-val">${d.mismatch?d.mismatch.length:0}</div><div class="stat-lbl">Amount Mismatch</div></div>
+    </div>
+    <div class="result-section">
+      <div class="result-head">
+        <span class="result-head-title">Missing in Google Sheets <span class="badge badge-red">${d.missing?d.missing.length:0}</span></span>
+        <span class="result-head-sub">Containers in uploaded file not found in your sheet</span>
+      </div>
+      <table><thead><tr><th>Container #</th><th>Uploaded Amount</th><th>Sheet</th><th>Difference</th></tr></thead>
+      <tbody>${missingRows}</tbody></table>
+    </div>
+    <div class="result-section">
+      <div class="result-head">
+        <span class="result-head-title">Amount Mismatches <span class="badge badge-yellow">${d.mismatch?d.mismatch.length:0}</span></span>
+        <span class="result-head-sub">Container found in both but commission amounts differ</span>
+      </div>
+      <table><thead><tr><th>Container #</th><th>Uploaded Amount</th><th>Sheet Amount</th><th>Difference</th></tr></thead>
+      <tbody>${mismatchRows}</tbody></table>
+    </div>`;
+  document.getElementById('resultsComm').style.display = 'block';
+  document.getElementById('resultsComm').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+</script>
+</body>
+</html>
