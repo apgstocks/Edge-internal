@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Edge Metals — Invoice Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Manrope',sans-serif;
+  background:#f8fafc;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:32px 20px;
+}
+body::before{
+  content:'';
+  position:fixed;top:0;left:0;right:0;height:4px;
+  background:linear-gradient(90deg,#2E6DA4 0%,#4a9fd4 50%,#2E6DA4 100%);
+  background-size:200% 100%;
+  animation:shimmer 3s linear infinite;
+}
+@keyframes shimmer{
+  0%{background-position:200% 0}
+  100%{background-position:-200% 0}
+}
+.shell{width:100%;max-width:520px;animation:rise 0.5s ease both;}
+@keyframes rise{
+  from{opacity:0;transform:translateY(20px)}
+  to{opacity:1;transform:none}
+}
+.header{text-align:center;margin-bottom:40px;}
+.logo{display:inline-flex;align-items:center;gap:10px;margin-bottom:28px;}
+.logo-sq{
+  width:38px;height:38px;background:#2E6DA4;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:800;color:white;letter-spacing:0.5px;
+}
+.logo-name{font-size:15px;font-weight:700;color:#1e293b;letter-spacing:0.3px;}
+h1{font-size:30px;font-weight:800;color:#0f172a;letter-spacing:-0.5px;margin-bottom:10px;line-height:1.2;}
+.sub{font-size:14px;font-weight:400;color:#64748b;line-height:1.6;}
+.cards{display:flex;flex-direction:column;gap:14px;margin-bottom:32px;}
+.card{
+  background:white;border:1.5px solid #e2e8f0;border-radius:14px;
+  padding:24px 24px 24px 22px;text-decoration:none;color:inherit;
+  display:flex;align-items:center;gap:20px;
+  transition:all 0.2s ease;position:relative;overflow:hidden;
+}
+.card::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:4px;
+  border-radius:14px 0 0 14px;transition:opacity 0.2s;opacity:0;
+}
+.card-a::before{background:#2E6DA4;}
+.card-b::before{background:#0ea5e9;}
+.card-c::before{background:#7c3aed;}
+.card:hover{border-color:transparent;transform:translateX(4px);box-shadow:0 4px 24px rgba(0,0,0,0.08);}
+.card:hover::before{opacity:1;}
+.card-a:hover{box-shadow:0 4px 24px rgba(46,109,164,0.12);}
+.card-b:hover{box-shadow:0 4px 24px rgba(14,165,233,0.12);}
+.card-c:hover{box-shadow:0 4px 24px rgba(124,58,237,0.12);}
+.icon-wrap{flex-shrink:0;width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;}
+.card-a .icon-wrap{background:#eff6ff;}
+.card-b .icon-wrap{background:#f0f9ff;}
+.card-c .icon-wrap{background:#f5f3ff;}
+.icon-wrap svg{width:22px;height:22px;}
+.card-body{flex:1;}
+.card-title{font-size:16px;font-weight:700;color:#0f172a;margin-bottom:4px;}
+.card-desc{font-size:13px;font-weight:400;color:#64748b;line-height:1.55;}
+.card-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
+.tag{font-size:10px;font-weight:600;letter-spacing:0.5px;padding:3px 8px;border-radius:999px;text-transform:uppercase;}
+.card-a .tag{background:#dbeafe;color:#1d4ed8;}
+.card-b .tag{background:#e0f2fe;color:#0369a1;}
+.card-c .tag{background:#ede9fe;color:#6d28d9;}
+.chevron{
+  flex-shrink:0;width:32px;height:32px;border-radius:8px;background:#f1f5f9;
+  display:flex;align-items:center;justify-content:center;
+  transition:background 0.2s,transform 0.2s;
+}
+.card:hover .chevron{transform:translateX(2px);}
+.card-a:hover .chevron{background:#dbeafe;}
+.card-b:hover .chevron{background:#e0f2fe;}
+.card-c:hover .chevron{background:#ede9fe;}
+.footer{text-align:center;font-size:12px;font-weight:400;color:#94a3b8;line-height:1.8;}
+.footer a{color:#2E6DA4;text-decoration:none;font-weight:500;}
+.footer a:hover{text-decoration:underline;}
+.divider-dot{margin:0 8px;opacity:0.4;}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="header">
+    <div class="logo">
+      <div class="logo-sq">EM</div>
+      <span class="logo-name">Edge Metals Inc.</span>
+    </div>
+    <h1>Invoice Portal</h1>
+    <p class="sub">Select a module to continue</p>
+  </div>
+  <div class="cards">
+
+    <a href="/generate" class="card card-a">
+      <div class="icon-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#2E6DA4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14,2 14,8 20,8"/>
+          <line x1="12" y1="18" x2="12" y2="12"/>
+          <line x1="9" y1="15" x2="15" y2="15"/>
+        </svg>
+      </div>
+      <div class="card-body">
+        <div class="card-title">Invoice Generation</div>
+        <div class="card-desc">Generate commercial invoices & packing lists from Google Sheets. Search by container number and export as PDF.</div>
+        <div class="card-tags">
+          <span class="tag">PDF Export</span>
+          <span class="tag">Packing List</span>
+          <span class="tag">Google Sheets</span>
+        </div>
+      </div>
+      <div class="chevron">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#2E6DA4" stroke-width="2.2" stroke-linecap="round"><path d="M5 3l4 4-4 4"/></svg>
+      </div>
+    </a>
+
+    <a href="/verify" class="card card-b">
+      <div class="icon-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 11l3 3L22 4"/>
+          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+        </svg>
+      </div>
+      <div class="card-body">
+        <div class="card-title">Invoice Verification</div>
+        <div class="card-desc">Upload carrier freight PDFs and cross-check HBL numbers & amounts against your records to find discrepancies.</div>
+        <div class="card-tags">
+          <span class="tag">PDF Upload</span>
+          <span class="tag">HBL Match</span>
+          <span class="tag">Audit</span>
+        </div>
+      </div>
+      <div class="chevron">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#0ea5e9" stroke-width="2.2" stroke-linecap="round"><path d="M5 3l4 4-4 4"/></svg>
+      </div>
+    </a>
+
+    <a href="/proforma" class="card card-c">
+      <div class="icon-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14,2 14,8 20,8"/>
+          <line x1="8" y1="13" x2="16" y2="13"/>
+          <line x1="8" y1="17" x2="16" y2="17"/>
+          <line x1="8" y1="9" x2="10" y2="9"/>
+        </svg>
+      </div>
+      <div class="card-body">
+        <div class="card-title">Proforma Invoice</div>
+        <div class="card-desc">Generate proforma invoices for multiple containers with custom weights, rates, and payment terms. Smart fill from natural language. Export as PDF.</div>
+        <div class="card-tags">
+          <span class="tag">PDF Export</span>
+          <span class="tag">Multi-Container</span>
+          <span class="tag">Smart Fill</span>
+        </div>
+      </div>
+      <div class="chevron">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#7c3aed" stroke-width="2.2" stroke-linecap="round"><path d="M5 3l4 4-4 4"/></svg>
+      </div>
+    </a>
+
+  </div>
+  <div class="footer">
+    14750 Devonshire Ln, Frisco TX 75035
+    <span class="divider-dot">·</span>
+    <a href="tel:3109382525">(310) 938-2525</a>
+    <br/>© 2026 Edge Metals Inc. All rights reserved.
+  </div>
+</div>
+</body>
+</html>
