@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Proforma Invoice — Edge Metals</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Manrope',sans-serif;background:#f8fafc;min-height:100vh;padding:32px 20px;}
+body::before{content:'';position:fixed;top:0;left:0;right:0;height:4px;
+  background:linear-gradient(90deg,#7c3aed 0%,#a78bfa 50%,#7c3aed 100%);
+  background-size:200% 100%;animation:shimmer 3s linear infinite;z-index:100;}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.shell{width:100%;max-width:820px;margin:0 auto;}
+.topbar{display:flex;align-items:center;gap:14px;margin-bottom:24px;}
+.back-btn{display:flex;align-items:center;gap:6px;color:#7c3aed;font-size:13px;font-weight:600;
+  text-decoration:none;padding:7px 14px;border:1.5px solid #ede9fe;border-radius:8px;
+  background:white;transition:all 0.15s;}
+.back-btn:hover{background:#f5f3ff;border-color:#c4b5fd;}
+.page-title{font-size:22px;font-weight:800;color:#0f172a;}
+.page-sub{font-size:13px;color:#64748b;margin-top:2px;}
+.tab-bar{display:flex;gap:0;border:1.5px solid #e2e8f0;border-radius:12px;
+  background:white;overflow:hidden;margin-bottom:22px;width:fit-content;}
+.tab-btn{font-family:'Manrope',sans-serif;font-size:13px;font-weight:600;
+  padding:10px 24px;border:none;background:transparent;cursor:pointer;
+  color:#64748b;transition:all .15s;border-right:1.5px solid #e2e8f0;}
+.tab-btn:last-child{border-right:none;}
+.tab-btn.active{background:#7c3aed;color:white;}
+.tab-btn:hover:not(.active){background:#f5f3ff;color:#7c3aed;}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+.card{background:white;border:1.5px solid #e2e8f0;border-radius:14px;padding:24px;margin-bottom:18px;}
+.section-title{font-size:11px;font-weight:700;color:#7c3aed;letter-spacing:1px;text-transform:uppercase;margin-bottom:16px;}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+.field{display:flex;flex-direction:column;gap:5px;}
+.field label{font-size:11px;font-weight:600;color:#64748b;letter-spacing:0.4px;text-transform:uppercase;}
+.field input,.field textarea{font-family:'Manrope',sans-serif;font-size:13px;font-weight:500;
+  padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;
+  background:#fafafa;color:#0f172a;outline:none;transition:border-color 0.15s;}
+.field input:focus,.field textarea:focus{border-color:#7c3aed;background:white;}
+.field textarea{resize:vertical;min-height:60px;line-height:1.5;}
+.smart-card{border-radius:14px;padding:20px 24px;margin-bottom:18px;}
+.smart-card.purple{background:linear-gradient(135deg,#f5f3ff,#ede9fe);border:1.5px solid #c4b5fd;}
+.smart-card.green{background:linear-gradient(135deg,#f0fdf0,#e8f5e8);border:1.5px solid #bbf0b8;}
+.smart-title{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+  margin-bottom:10px;display:flex;align-items:center;gap:7px;}
+.smart-title.purple{color:#6d28d9;}
+.smart-title.green{color:#2A7D24;}
+.smart-row{display:flex;gap:10px;align-items:flex-end;}
+.smart-input{flex:1;font-family:'Manrope',sans-serif;font-size:13px;font-weight:500;
+  padding:10px 13px;border-radius:9px;background:white;color:#0f172a;
+  outline:none;resize:none;line-height:1.5;transition:border-color .15s;}
+.smart-input.purple{border:1.5px solid #c4b5fd;}
+.smart-input.green{border:1.5px solid #c8e6c5;}
+.smart-input.purple:focus{border-color:#7c3aed;}
+.smart-input.green:focus{border-color:#3DA836;}
+.smart-btn{flex-shrink:0;font-family:'Manrope',sans-serif;font-size:13px;font-weight:700;
+  color:white;border:none;border-radius:9px;padding:10px 18px;cursor:pointer;
+  transition:all .15s;white-space:nowrap;}
+.smart-btn.purple{background:#7c3aed;}
+.smart-btn.purple:hover{background:#6d28d9;}
+.smart-btn.green{background:#3DA836;}
+.smart-btn.green:hover{background:#2A7D24;}
+.smart-btn:disabled{opacity:.5;cursor:not-allowed;}
+.smart-hint{font-size:11px;margin-top:7px;opacity:.8;}
+.smart-hint.purple{color:#7c3aed;}
+.smart-hint.green{color:#2A7D24;}
+.smart-filled{font-size:12px;font-weight:600;color:#059669;margin-top:8px;
+  display:none;background:#ecfdf5;border:1px solid #6ee7b7;border-radius:7px;padding:7px 12px;}
+.containers-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.add-btn{display:flex;align-items:center;gap:6px;font-family:'Manrope',sans-serif;
+  font-size:12px;font-weight:600;color:#7c3aed;background:#f5f3ff;
+  border:1.5px solid #ede9fe;border-radius:8px;padding:7px 14px;cursor:pointer;transition:all .15s;}
+.add-btn:hover{background:#ede9fe;}
+.ct-table{width:100%;border-collapse:collapse;}
+.ct-table th{font-size:10px;font-weight:700;color:#64748b;letter-spacing:.5px;
+  text-transform:uppercase;padding:8px 10px;background:#f8fafc;
+  border-bottom:1.5px solid #e2e8f0;text-align:left;}
+.ct-table td{padding:6px 6px;}
+.ct-table td input{width:100%;font-family:'Manrope',sans-serif;font-size:13px;font-weight:500;
+  padding:7px 10px;border:1.5px solid #e2e8f0;border-radius:7px;background:#fafafa;
+  color:#0f172a;outline:none;transition:border-color .15s;}
+.ct-table td input:focus{border-color:#7c3aed;background:white;}
+.ct-table td textarea.desc-input{width:100%;font-family:'Manrope',sans-serif;font-size:13px;font-weight:500;
+  padding:7px 10px;border:1.5px solid #e2e8f0;border-radius:7px;background:#fafafa;
+  color:#0f172a;outline:none;transition:border-color .15s;resize:none;min-height:36px;
+  line-height:1.4;overflow:hidden;}
+.ct-table td textarea.desc-input:focus{border-color:#7c3aed;background:white;}
+.ct-table .amt-cell{font-size:13px;font-weight:600;color:#0f172a;padding:7px 10px;text-align:right;}
+.del-btn{background:none;border:none;cursor:pointer;color:#94a3b8;padding:4px 8px;
+  border-radius:6px;font-size:16px;transition:color .15s;}
+.del-btn:hover{color:#ef4444;background:#fef2f2;}
+.total-bar{display:flex;justify-content:flex-end;align-items:center;gap:12px;
+  padding:12px 10px 0;border-top:1.5px solid #e2e8f0;margin-top:8px;}
+.total-label{font-size:12px;font-weight:600;color:#64748b;}
+.total-val{font-size:16px;font-weight:800;color:#7c3aed;}
+.tolerance-row{font-size:11px;color:#64748b;padding:6px 10px;}
+.tolerance-row input[type=text]{width:220px;font-family:'Manrope',sans-serif;font-size:12px;
+  padding:5px 9px;border:1.5px solid #e2e8f0;border-radius:6px;background:#fafafa;}
+.tbl-input{width:100%;padding:8px 10px;border:1.5px solid #e8edf2;border-radius:7px;
+  font-family:'Manrope',sans-serif;font-size:13px;font-weight:500;outline:none;transition:border-color .2s;}
+.tbl-input:focus{border-color:#3DA836;}
+.btn-del-row{background:none;border:none;color:#cbd5e1;cursor:pointer;font-size:16px;padding:4px 8px;transition:color .2s;}
+.btn-del-row:hover{color:#ef4444;}
+.dc2-totals{display:flex;justify-content:flex-end;margin-top:14px;}
+.dc2-totals-box{background:#f0fdf0;border:1.5px solid #bbf0b8;border-radius:10px;padding:14px 20px;min-width:260px;}
+.dc2-totals-line{display:flex;justify-content:space-between;font-size:13px;color:#64748b;margin-bottom:6px;}
+.dc2-totals-total{display:flex;justify-content:space-between;font-size:16px;font-weight:800;
+  color:#1A211B;margin-top:10px;padding-top:10px;border-top:1.5px solid #bbf0b8;}
+.actions{display:flex;gap:12px;justify-content:flex-end;margin-top:6px;}
+.btn{padding:12px 28px;border:none;border-radius:10px;font-family:'Manrope',sans-serif;
+  font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;}
+.btn-primary-purple{background:#7c3aed;color:white;}
+.btn-primary-purple:hover{background:#6d28d9;}
+.btn-primary-green{background:#3DA836;color:white;}
+.btn-primary-green:hover{background:#2A7D24;}
+.btn-outline-purple{background:white;color:#7c3aed;border:1.5px solid #7c3aed;}
+.btn-outline-purple:hover{background:#f5f3ff;}
+.btn-outline-green{background:white;color:#3DA836;border:1.5px solid #3DA836;}
+.btn-outline-green:hover{background:#f0fdf0;}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+.status{font-size:13px;font-weight:500;padding:10px 14px;border-radius:8px;display:none;margin-bottom:14px;}
+.status.error{background:#fef2f2;color:#dc2626;border:1px solid #fecaca;display:block;}
+.status.loading{background:#f5f3ff;color:#7c3aed;border:1px solid #ddd6fe;display:block;}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:white;border-radius:16px;width:90vw;max-width:900px;height:88vh;display:flex;flex-direction:column;overflow:hidden;}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1.5px solid #e2e8f0;flex-shrink:0;}
+.modal-title{font-size:15px;font-weight:700;color:#0f172a;}
+.close-btn{background:none;border:none;cursor:pointer;color:#64748b;font-size:20px;padding:4px 8px;}
+.modal iframe{flex:1;border:none;}
+
+/* ── Ocean Freight Toggle ─────────────────────────────────────── */
+.freight-toggle-group{display:flex;gap:0;border:1.5px solid #d1fae5;border-radius:9px;overflow:hidden;width:fit-content;}
+.freight-btn{font-family:'Manrope',sans-serif;font-size:12px;font-weight:600;
+  padding:8px 16px;border:none;background:white;cursor:pointer;color:#64748b;
+  transition:all .15s;border-right:1.5px solid #d1fae5;white-space:nowrap;line-height:1.3;}
+.freight-btn:last-child{border-right:none;}
+.freight-btn.active-included{background:#dcfce7;color:#166534;box-shadow:inset 0 0 0 1.5px #4ade80;}
+.freight-btn.active-excluded{background:#fef9c3;color:#854d0e;box-shadow:inset 0 0 0 1.5px #fde047;}
+.freight-btn.active-blank{background:#f1f5f9;color:#334155;box-shadow:inset 0 0 0 1.5px #94a3b8;}
+.freight-btn:hover:not(.active-included):not(.active-excluded):not(.active-blank){background:#f8fafc;}
+.freight-chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;
+  padding:3px 8px;border-radius:5px;margin-top:5px;}
+.freight-chip.included{background:#dcfce7;color:#166534;}
+.freight-chip.excluded{background:#fef9c3;color:#854d0e;}
+.freight-chip.blank{background:#f1f5f9;color:#64748b;}
+
+@media(max-width:600px){.grid-2,.grid-3{grid-template-columns:1fr;}.freight-btn{padding:8px 10px;font-size:11px;}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="topbar">
+    <a href="/" class="back-btn">&#8592; Back</a>
+    <div><div class="page-title">Proforma Invoice</div><div class="page-sub">Choose layout below</div></div>
+  </div>
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('classic',this)">Classic (Table)</button>
+    <button class="tab-btn" onclick="switchTab('dc2',this)">Spec-List (dc-2)</button>
+  </div>
+
+  <!-- ═══ TAB 1 CLASSIC ═══ -->
+  <div id="tab-classic" class="tab-panel active">
+    <div id="statusMsg1" class="status"></div>
+    <div class="smart-card purple">
+      <div class="smart-title purple">&#10022; Smart Fill</div>
+      <div class="smart-row">
+        <textarea class="smart-input purple" id="smartInput1" rows="2" placeholder='e.g. "Taewon confirmed 3 containers AL COMBO at $1,135 with TT payment 10 days before arrival"'></textarea>
+        <button class="smart-btn purple" id="smartBtn1" onclick="smartFill1()">Fill Form</button>
+      </div>
+      <div class="smart-hint purple">Mention consignee, containers, product, rate, payment terms.</div>
+      <div class="smart-filled" id="smartFilled1"></div>
+    </div>
+    <div class="card">
+      <div class="section-title">Invoice Details</div>
+      <div class="grid-3" style="margin-bottom:14px">
+        <div class="field"><label>Invoice No</label><input type="text" id="invNo" placeholder="e.g. EDGE/AL COMBO/26JY57,58,59"/></div>
+        <div class="field"><label>Invoice Date</label><input type="text" id="invDate" placeholder="MM/DD/YYYY"/></div>
+        <div class="field"><label>Buyer Order No</label><input type="text" id="buyerOrder" placeholder="Optional"/></div>
+      </div>
+      <div class="grid-2">
+        <div class="field"><label>Other Reference</label><input type="text" id="otherRef" value="Proforma and Email Confirmation"/></div>
+        <div class="field"><label>Consignee</label><input type="text" id="consignee" placeholder="Company name" onblur="matchAndFill()"/></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="section-title">Shipping Details</div>
+      <div class="grid-3" style="margin-bottom:14px">
+        <div class="field"><label>Country of Origin</label><input type="text" id="countryOrigin" value="USA"/></div>
+        <div class="field"><label>Terms of Delivery</label><input type="text" id="terms" placeholder="e.g. CIF BUSAN"/></div>
+        <div class="field"><label>Payment Terms</label><input type="text" id="paymentTerms" placeholder="e.g. TT 10 days before arrival"/></div>
+      </div>
+      <div class="grid-3">
+        <div class="field"><label>Pre-Carriage By</label><input type="text" id="preCarriage" value="BY SEA"/></div>
+        <div class="field"><label>Port of Loading</label><input type="text" id="portLoading" value="USA Ports"/></div>
+        <div class="field"><label>Vessel / Flight No</label><input type="text" id="vessel" placeholder="Optional"/></div>
+      </div>
+      <div class="grid-2" style="margin-top:14px">
+        <div class="field"><label>Port of Discharge</label><input type="text" id="portDischarge" placeholder="e.g. BUSAN, KOREA"/></div>
+        <div class="field"><label>Comments</label><input type="text" id="comments" placeholder="Optional"/></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="containers-header">
+        <div class="section-title" style="margin-bottom:0">Containers &amp; Line Items</div>
+        <button class="add-btn" onclick="addRowBtn()">+ Add Container</button>
+      </div>
+      <table class="ct-table">
+        <thead><tr>
+          <th style="width:26%">Container ID</th>
+          <th style="width:22%">Description</th><th style="width:13%">Qty (MT)</th>
+          <th style="width:15%">Rate (US$/MT)</th><th style="width:13%;text-align:right">Amount US$</th>
+          <th style="width:6%"></th>
+        </tr></thead>
+        <tbody id="lineItemsBody"></tbody>
+      </table>
+      <div class="tolerance-row">
+        <label style="font-size:11px;font-weight:600;color:#64748b;margin-right:8px">Tolerance note:</label>
+        <input type="text" id="toleranceNote" value="(+ 0r - on 10%weights)"/>
+      </div>
+      <div class="total-bar"><span class="total-label">TOTAL</span><span class="total-val" id="grandTotal">$0.00</span></div>
+    </div>
+    <div class="actions">
+      <button class="btn btn-outline-purple" onclick="previewProforma()">Preview</button>
+      <button class="btn btn-primary-purple" id="dlBtn1" onclick="downloadProforma()">Download PDF</button>
+    </div>
+  </div>
+
+  <!-- ═══ TAB 2 DC-2 ═══ -->
+  <div id="tab-dc2" class="tab-panel">
+    <div id="statusMsg2" class="status"></div>
+    <div class="smart-card green">
+      <div class="smart-title green">&#10022; Smart Fill &mdash; describe the shipment</div>
+      <div class="smart-row">
+        <textarea class="smart-input green" id="smartInput2" rows="2"
+          placeholder="e.g. taewon confirmed 3 containers of AL combo @1150 and regular combo @695, MMR required"></textarea>
+        <button class="smart-btn green" id="smartBtn2" onclick="smartFill2()">Fill Form</button>
+      </div>
+      <div class="smart-hint green">Mention buyer, number of containers, commodity names and rates.</div>
+      <div class="smart-filled" id="smartFilled2"></div>
+    </div>
+    <div class="card">
+      <div class="section-title">Invoice Details</div>
+      <div class="grid-3" style="margin-bottom:14px">
+        <div class="field"><label>Invoice No</label><input type="text" id="d2_inv_no" placeholder="EM-PI-20260624"/></div>
+        <div class="field"><label>Invoice Date</label><input type="text" id="d2_inv_date" placeholder="06/24/2026"/></div>
+        <div class="field"><label>Buyer PO</label><input type="text" id="d2_buyer_po" placeholder="Optional"/></div>
+      </div>
+      <div class="grid-2">
+        <div class="field"><label>Reference #</label><input type="text" id="d2_reference" value="Proforma &amp; Email Conf."/></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="section-title">Customer</div>
+      <div class="grid-2" style="margin-bottom:14px">
+        <div class="field"><label>Consignee Name</label><input type="text" id="d2_consignee" placeholder="Taewon Automotive Co., Ltd." onblur="d2LookupAddress()"/></div>
+        <div class="field"><label>Port of Discharge</label><input type="text" id="d2_port_discharge" placeholder="Busan, South Korea"/></div>
+      </div>
+      <div class="field"><label>Consignee Address (one line per row)</label>
+        <textarea id="d2_consignee_address" rows="3" placeholder="Address line 1&#10;Address line 2&#10;Tel / Contact"></textarea>
+      </div>
+    </div>
+    <div class="card">
+      <div class="section-title">Shipment Terms</div>
+      <div class="grid-2" style="margin-bottom:14px">
+        <div class="field"><label>Trade Terms</label><input type="text" id="d2_trade_terms" placeholder="TT CIF Busan, South Korea"/></div>
+        <div class="field"><label>Payment Term</label><input type="text" id="d2_payment_term" value="T/T 100% Against Shipping Documents"/></div>
+      </div>
+      <div class="grid-2">
+        <div class="field"><label>Shipment Allowance</label><input type="text" id="d2_shipment_allowance" value="+/- 10% on weights"/></div>
+        <div class="field"><label>Country of Origin</label><input type="text" id="d2_country_of_origin" value="USA"/></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="containers-header">
+        <div class="section-title" style="margin-bottom:0">Containers &amp; Items</div>
+        <button class="add-btn" style="color:#3DA836;background:#f0fdf0;border-color:#bbf0b8" onclick="d2AddItem()">+ Add Item</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px;padding:12px 14px;background:#f0fdf0;border-radius:9px;border:1.5px solid #bbf0b8">
+        <label style="font-size:11px;font-weight:700;color:#2A7D24;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap">Number of Containers</label>
+        <input type="number" id="d2_num_containers" value="1" min="1" max="20" style="width:80px;padding:7px 10px;border:1.5px solid #bbf0b8;border-radius:7px;font-family:'Manrope',sans-serif;font-size:14px;font-weight:700;color:#1A211B;text-align:center;outline:none" oninput="d2Render()"/>
+        <span style="font-size:12px;color:#64748b">Enter qty per container below — totals auto-calculate</span>
+      </div>
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr>
+          <th style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;padding:8px 10px;text-align:left;border-bottom:1.5px solid #e2e8f0;width:38%">Description</th>
+          <th style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;padding:8px 10px;text-align:right;border-bottom:1.5px solid #e2e8f0;width:18%">Qty / Container (MT)</th>
+          <th style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;padding:8px 10px;text-align:right;border-bottom:1.5px solid #e2e8f0;width:18%">Rate ($/MT)</th>
+          <th style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;padding:8px 10px;text-align:right;border-bottom:1.5px solid #e2e8f0;width:20%">Total Amount</th>
+          <th style="border-bottom:1.5px solid #e2e8f0;width:6%"></th>
+        </tr></thead>
+        <tbody id="d2ItemsBody"></tbody>
+      </table>
+      <div class="dc2-totals">
+        <div class="dc2-totals-box">
+          <div class="dc2-totals-line"><span>Total Weight</span><span id="d2TotQty">0.00 MT</span></div>
+          <div class="dc2-totals-total"><span>Estimated Total</span><span id="d2TotAmt">$0.00</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Notes card ─────────────────────────────────────────── -->
+    <div class="card">
+      <div class="section-title">Notes</div>
+
+        <!-- Ocean Freight only -->
+        <div class="field">
+          <label>Ocean Freight</label>
+          <div style="margin-top:2px">
+            <div class="freight-toggle-group" id="freightToggleGroup">
+              <button class="freight-btn active-included" data-value="CIF (freight included)"
+                onclick="setFreight(this,'CIF (freight included)')">
+                ✓ Included<br><span style="font-size:10px;font-weight:400;opacity:.75">CIF</span>
+              </button>
+              <button class="freight-btn" data-value="FOB (freight excluded)"
+                onclick="setFreight(this,'FOB (freight excluded)')">
+                ✗ Excluded<br><span style="font-size:10px;font-weight:400;opacity:.75">FOB</span>
+              </button>
+              <button class="freight-btn" data-value=""
+                onclick="setFreight(this,'')">
+                — Blank<br><span style="font-size:10px;font-weight:400;opacity:.75">not stated</span>
+              </button>
+            </div>
+            <div id="freightChip" class="freight-chip included" style="margin-top:7px">
+              <span>●</span><span id="freightChipText">CIF (freight included)</span>
+            </div>
+          </div>
+          <!-- Hidden input carries the value for PDF payload -->
+          <input type="hidden" id="d2_freight_label" value="CIF (freight included)"/>
+        </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-outline-green" onclick="d2Reset()">Reset</button>
+      <button class="btn btn-primary-green" id="dlBtn2" onclick="d2GeneratePdf()">Generate PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="previewModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Proforma Preview</span>
+      <div style="display:flex;gap:10px;align-items:center">
+        <button class="btn btn-primary-purple" style="padding:8px 18px;font-size:13px" onclick="downloadProforma()">Download</button>
+        <button class="close-btn" onclick="closeModal()">&#10005;</button>
+      </div>
+    </div>
+    <iframe id="previewFrame" src="about:blank"></iframe>
+  </div>
+</div>
+
+<script>
+const GEMINI_KEY = 'AQ.Ab8RN6KzHJnCcTocHKXzx3DbYOTMnlil85ww3SCbeY55A1Hp1A';
+
+// ── Tabs ──────────────────────────────────────────────────────────
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ── Status helpers ────────────────────────────────────────────────
+function showStatus(id, msg, type) {
+  var el = document.getElementById(id);
+  el.textContent = msg; el.className = 'status ' + type;
+}
+function hideStatus(id) { document.getElementById(id).className = 'status'; }
+
+// ── Ocean Freight Toggle ──────────────────────────────────────────
+function setFreight(btn, value) {
+  // Clear all active classes
+  document.querySelectorAll('#freightToggleGroup .freight-btn').forEach(function(b) {
+    b.classList.remove('active-included','active-excluded','active-blank');
+  });
+  // Apply correct active class
+  if (value === 'CIF (freight included)') {
+    btn.classList.add('active-included');
+  } else if (value === 'FOB (freight excluded)') {
+    btn.classList.add('active-excluded');
+  } else {
+    btn.classList.add('active-blank');
+  }
+  // Update hidden input
+  document.getElementById('d2_freight_label').value = value;
+  // Update chip
+  var chip = document.getElementById('freightChip');
+  var chipText = document.getElementById('freightChipText');
+  chip.className = 'freight-chip';
+  if (value === 'CIF (freight included)') {
+    chip.classList.add('included'); chipText.textContent = 'CIF (freight included)';
+  } else if (value === 'FOB (freight excluded)') {
+    chip.classList.add('excluded'); chipText.textContent = 'FOB (freight excluded)';
+  } else {
+    chip.classList.add('blank'); chipText.textContent = 'Not stated on invoice';
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  CLASSIC TAB
+// ══════════════════════════════════════════════════════════════════
+var rowCount = 0;
+const DEF_MT = 21, DEF_RATE = 1135, DEF_DESC = 'AL COMBO';
+
+function makeDescTa(val) {
+  var ta = document.createElement('textarea');
+  ta.className = 'desc-input'; ta.value = val || DEF_DESC; ta.placeholder = 'Description'; ta.rows = 1;
+  ta.addEventListener('input', function(){ this.style.height='auto'; this.style.height=this.scrollHeight+'px'; recalc(); });
+  return ta;
+}
+
+function addRow(ctnId, desc, mt, rate) {
+  rowCount++;
+  desc = desc||DEF_DESC;
+  mt = (mt!==undefined&&mt!=='') ? mt : DEF_MT;
+  rate = (rate!==undefined&&rate!=='') ? rate : DEF_RATE;
+  var tbody = document.getElementById('lineItemsBody');
+  var tr = document.createElement('tr'); tr.dataset.id = rowCount; tr.dataset.isSub = 'false';
+  function inp(type,val,st){ var e=document.createElement('input'); e.type=type; e.value=val; if(st) e.style.cssText=st; return e; }
+  var s2=document.createElement('td'); var ci=inp('text',ctnId||'',''); ci.placeholder='Container #'; s2.appendChild(ci); tr.appendChild(s2);
+  var s3=document.createElement('td'); s3.appendChild(makeDescTa(desc)); tr.appendChild(s3);
+  var qi=inp('number',mt,'text-align:right'); qi.step='0.001'; qi.min='0'; qi.addEventListener('input',recalc);
+  var s4=document.createElement('td'); s4.appendChild(qi); tr.appendChild(s4);
+  var ri=inp('number',rate,'text-align:right'); ri.step='0.01'; ri.min='0'; ri.addEventListener('input',recalc);
+  var s5=document.createElement('td'); s5.appendChild(ri); tr.appendChild(s5);
+  var s6=document.createElement('td'); s6.className='amt-cell'; s6.id='amt_'+rowCount; s6.textContent='$0.00'; tr.appendChild(s6);
+  var s7=document.createElement('td'); s7.style.whiteSpace='nowrap';
+  var ab=document.createElement('button'); ab.className='del-btn'; ab.textContent='+'; ab.style.cssText='color:#7c3aed;font-weight:700;font-size:16px'; ab.onclick=function(){addSubRow(tr);}; s7.appendChild(ab);
+  var db=document.createElement('button'); db.className='del-btn'; db.textContent='\u2715'; db.onclick=function(){delRow(this);}; s7.appendChild(db);
+  tr.appendChild(s7); tbody.appendChild(tr); recalc();
+}
+
+function addSubRow(parentTr) {
+  var tbody=document.getElementById('lineItemsBody');
+  var all=Array.from(tbody.querySelectorAll('tr')); var pi=all.indexOf(parentTr); var ins=parentTr;
+  for(var i=pi+1;i<all.length;i++){ if(all[i].dataset.isSub==='true') ins=all[i]; else break; }
+  rowCount++;
+  var tr=document.createElement('tr'); tr.dataset.id=rowCount; tr.dataset.isSub='true'; tr.dataset.parentId=parentTr.dataset.id; tr.style.background='#f8fafc';
+  var e2=document.createElement('td'); e2.style.borderTop='none'; tr.appendChild(e2);
+  var dt=document.createElement('td'); dt.appendChild(makeDescTa('REGULAR COMBO')); tr.appendChild(dt);
+  function ni(v){ var e=document.createElement('input'); e.type='number'; e.value=v; e.step='0.001'; e.min='0'; e.style.textAlign='right'; e.addEventListener('input',recalc); return e; }
+  var qt=document.createElement('td'); qt.appendChild(ni(DEF_MT)); tr.appendChild(qt);
+  var rt=document.createElement('td'); var ri2=document.createElement('input'); ri2.type='number'; ri2.value=DEF_RATE; ri2.step='0.01'; ri2.min='0'; ri2.style.textAlign='right'; ri2.addEventListener('input',recalc); rt.appendChild(ri2); tr.appendChild(rt);
+  var at=document.createElement('td'); at.className='amt-cell'; at.id='amt_'+rowCount; at.textContent='$0.00'; tr.appendChild(at);
+  var act=document.createElement('td'); var db=document.createElement('button'); db.className='del-btn'; db.textContent='\u2715'; db.onclick=function(){tr.remove();recalc();}; act.appendChild(db); tr.appendChild(act);
+  if(ins.nextSibling) tbody.insertBefore(tr,ins.nextSibling); else tbody.appendChild(tr); recalc();
+}
+
+function delRow(btn){ var tr=btn.closest('tr'); var id=tr.dataset.id; document.querySelectorAll('[data-parent-id="'+id+'"]').forEach(s=>s.remove()); tr.remove(); recalc(); fillSNos(); }
+
+function recalc(){
+  var total=0;
+  document.querySelectorAll('#lineItemsBody tr').forEach(function(tr){
+    var ins=tr.querySelectorAll('input[type=number]');
+    var mt=parseFloat(ins[0]&&ins[0].value)||0; var rate=parseFloat(ins[1]&&ins[1].value)||0; var amt=mt*rate; total+=amt;
+    var cell=document.getElementById('amt_'+tr.dataset.id); if(cell) cell.textContent='$'+amt.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  });
+  document.getElementById('grandTotal').textContent='$'+total.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+function setToday(){
+  var d=new Date(); var mm=String(d.getMonth()+1).padStart(2,'0'); var dd=String(d.getDate()).padStart(2,'0');
+  document.getElementById('invDate').value=mm+'/'+dd+'/'+d.getFullYear();
+}
+
+function buildPayload(){
+  var rows=[];
+  document.querySelectorAll('#lineItemsBody tr').forEach(function(tr){
+    var isSub=tr.dataset.isSub==='true';
+    var ins=tr.querySelectorAll('input[type=number]'); var tis=tr.querySelectorAll('input[type=text]'); var de=tr.querySelector('textarea.desc-input');
+    var mt=parseFloat(ins[0]&&ins[0].value)||0; var rate=parseFloat(ins[1]&&ins[1].value)||0;
+    if(isSub){
+      if(rows.length>0){ var p=rows[rows.length-1]; for(var i=rows.length-1;i>=0;i--){if(!rows[i].is_sub){p=rows[i];break;}} if(!p.sub_items)p.sub_items=[]; p.sub_items.push({description:de?de.value.trim():'',quantity_mt:mt,rate:rate,is_sub:true}); }
+    } else { rows.push({label:tis[0]?tis[0].value.trim():'',container_id:tis[1]?tis[1].value.trim():'',description:de?de.value.trim():'',quantity_mt:mt,rate:rate,is_sub:false}); }
+  });
+  return {inv_no:v1('invNo'),inv_date:v1('invDate'),buyer_order:v1('buyerOrder'),other_ref:v1('otherRef'),consignee:v1('consignee'),country_origin:v1('countryOrigin'),terms:v1('terms'),payment_terms:v1('paymentTerms'),pre_carriage:v1('preCarriage'),port_loading:v1('portLoading'),vessel:v1('vessel'),port_discharge:v1('portDischarge'),comments:v1('comments'),tolerance_note:v1('toleranceNote'),line_items:rows};
+}
+function v1(id){ return (document.getElementById(id)||{}).value||''; }
+
+async function previewProforma(){
+  var payload=buildPayload(); if(!payload.line_items.length){showStatus('statusMsg1','Add at least one container.','error');return;}
+  showStatus('statusMsg1','Generating preview...','loading');
+  try{
+    var resp=await fetch('/api/generate-proforma?preview=1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    if(!resp.ok){var e=await resp.json();showStatus('statusMsg1',e.error||'Error','error');return;}
+    document.getElementById('previewFrame').src=URL.createObjectURL(await resp.blob());
+    document.getElementById('previewModal').classList.add('open'); hideStatus('statusMsg1');
+  }catch(e){showStatus('statusMsg1','Failed: '+e.message,'error');}
+}
+
+async function downloadProforma(){
+  var payload=buildPayload(); if(!payload.line_items.length){showStatus('statusMsg1','Add at least one container.','error');return;}
+  var btn=document.getElementById('dlBtn1'); btn.disabled=true; btn.textContent='Generating...';
+  showStatus('statusMsg1','Generating PDF...','loading');
+  try{
+    var resp=await fetch('/api/generate-proforma',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    if(!resp.ok){var e=await resp.json();showStatus('statusMsg1',e.error||'Error','error');return;}
+    var a=document.createElement('a'); a.href=URL.createObjectURL(await resp.blob());
+    a.download=(payload.inv_no||'proforma').replace(/[\/\s,]+/g,'_')+'_PROFORMA.pdf'; a.click(); hideStatus('statusMsg1');
+  }catch(e){showStatus('statusMsg1','Failed: '+e.message,'error');}
+  finally{btn.disabled=false;btn.textContent='Download PDF';}
+}
+
+function closeModal(){ document.getElementById('previewModal').classList.remove('open'); document.getElementById('previewFrame').src='about:blank'; }
+
+async function smartFill1(){
+  var text=document.getElementById('smartInput1').value.trim(); if(!text){showStatus('statusMsg1','Paste a message first.','error');return;}
+  var btn=document.getElementById('smartBtn1'); btn.disabled=true; btn.textContent='Thinking...';
+  var prompt='You extract structured proforma invoice data from natural language messages for Edge Metals Inc, a US scrap metal exporter.\n\nReturn ONLY valid JSON, no explanation, no markdown, no code fences.\n\nJSON schema:\n{"consignee":"company name","num_containers":1,"description":"product","quantity_mt":21,"rate":0,"terms":"","payment_terms":"","port_discharge":"","vessel":"","comments":""}\n\nRules: taewon->TAEWON AUTOMOTIVE CO., LTD; al combo->AL COMBO; auto cast->AUTO CAST; rate numeric only; default qty 21\n\nMessage: "'+text+'"';
+  try{
+    var resp=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+GEMINI_KEY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0}})});
+    if(!resp.ok){showStatus('statusMsg1','Gemini error '+resp.status,'error');return;}
+    var data=await resp.json(); var raw=data.candidates[0].content.parts[0].text;
+    var parsed=JSON.parse(raw.replace(/```json|```/g,'').trim());
+    if(parsed.consignee)     document.getElementById('consignee').value=parsed.consignee;
+    if(parsed.terms)         document.getElementById('terms').value=parsed.terms;
+    if(parsed.payment_terms) document.getElementById('paymentTerms').value=parsed.payment_terms;
+    if(parsed.port_discharge)document.getElementById('portDischarge').value=parsed.port_discharge;
+    if(parsed.vessel)        document.getElementById('vessel').value=parsed.vessel;
+    if(parsed.comments)      document.getElementById('comments').value=parsed.comments;
+    var n=parseInt(parsed.num_containers)||1; var desc=parsed.description||DEF_DESC;
+    var mt=parseFloat(parsed.quantity_mt)||DEF_MT; var rate=parseFloat(parsed.rate)||DEF_RATE;
+    document.getElementById('lineItemsBody').innerHTML=''; rowCount=0;
+    for(var i=1;i<=n;i++) addRow('CONTAINER '+i,desc,mt,rate);
+    if(parsed.consignee) matchAndFill();
+    document.getElementById('smartFilled1').textContent='Filled: '+n+' container(s) x '+mt+' MT @ $'+rate.toLocaleString();
+    document.getElementById('smartFilled1').style.display='block'; hideStatus('statusMsg1');
+  }catch(e){showStatus('statusMsg1','Smart fill failed: '+e.message,'error');}
+  finally{btn.disabled=false;btn.textContent='Fill Form';}
+}
+
+function addRowBtn(){ var n=document.querySelectorAll('#lineItemsBody tr:not([data-is-sub="true"])').length+1; addRow('CONTAINER '+n,DEF_DESC,DEF_MT,DEF_RATE); fillSNos(); }
+
+var _fillingSNos=false;
+async function matchAndFill(){
+  var query=document.getElementById('consignee').value.trim(); if(!query)return;
+  try{
+    var resp=await fetch('/api/match-consignee',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:query})});
+    var data=await resp.json(); if(resp.ok&&data.consignee) document.getElementById('consignee').value=data.consignee;
+  }catch(e){}
+  fillSNos();
+}
+
+async function fillSNos(){
+  if(_fillingSNos)return; var consignee=document.getElementById('consignee').value.trim(); if(!consignee)return;
+  _fillingSNos=true;
+  try{
+    var resp=await fetch('/api/next-inv-no',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({consignee:consignee})});
+    var data=await resp.json(); if(!resp.ok||!data.prefix)return;
+    if(data.actual_consignee) document.getElementById('consignee').value=data.actual_consignee;
+    var start=parseInt(data.last_used.substring(data.prefix.length),10)+1;
+    function fmt(p,n){return p+(n<10?'0'+n:String(n));}
+    var mainRows=Array.from(document.querySelectorAll('#lineItemsBody tr')).filter(tr=>tr.dataset.isSub!=='true');
+    mainRows.forEach((tr,idx)=>{var ti=tr.querySelectorAll('input[type=text]');if(ti[0])ti[0].value=fmt(data.prefix,start+idx);});
+    var codes=mainRows.map((tr,idx)=>fmt(data.prefix,start+idx));
+    document.getElementById('invNo').value='EDGE/'+codes.join(',');
+    document.getElementById('smartFilled1').textContent='S.No auto-filled: '+codes[0]+(codes.length>1?' to '+codes[codes.length-1]:'')+' | Invoice No: EDGE/'+codes.join(',');
+    document.getElementById('smartFilled1').style.display='block';
+  }catch(e){}
+  finally{_fillingSNos=false;}
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  DC-2 TAB
+// ══════════════════════════════════════════════════════════════════
+var d2Items = [];
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
+
+function d2AddItem(data){
+  d2Items.push(data || {desc:'', qty_per_container:0, rate:0});
+  d2Render();
+}
+
+function d2RemoveItem(idx){
+  if(d2Items.length > 1){ d2Items.splice(idx,1); d2Render(); }
+}
+
+function d2UpdItem(idx, field, val){
+  d2Items[idx][field] = val; d2Totals();
+}
+
+function d2Render(){
+  var tbody = document.getElementById('d2ItemsBody');
+  if(!d2Items.length){
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:#94a3b8;font-size:13px">Use Smart Fill or click + Add Item.</td></tr>';
+    d2Totals(); return;
+  }
+  var numC = parseInt(document.getElementById('d2_num_containers').value)||1;
+  tbody.innerHTML = d2Items.map((it,i) => {
+    var totalQty = (it.qty_per_container||0) * numC;
+    var totalAmt = totalQty * (it.rate||0);
+    return `<tr>
+      <td style="padding:6px 4px"><input class="tbl-input" value="${esc(it.desc)}" placeholder="e.g. AL Combo"
+        onchange="d2UpdItem(${i},'desc',this.value)"></td>
+      <td style="padding:6px 4px"><input class="tbl-input" value="${it.qty_per_container||''}" placeholder="0.00" style="text-align:right"
+        onchange="d2UpdItem(${i},'qty_per_container',parseFloat(this.value)||0)"></td>
+      <td style="padding:6px 4px"><input class="tbl-input" value="${it.rate||''}" placeholder="0" style="text-align:right"
+        onchange="d2UpdItem(${i},'rate',parseFloat(this.value)||0)"></td>
+      <td style="padding:6px 10px;text-align:right;font-weight:600;font-size:13px;color:#1A211B">
+        $${totalAmt.toLocaleString('en-US',{minimumFractionDigits:2})}
+        <div style="font-size:10px;font-weight:400;color:#94a3b8">${totalQty.toFixed(2)} MT total</div>
+      </td>
+      <td style="padding:6px 2px"><button class="btn-del-row" onclick="d2RemoveItem(${i})">&#215;</button></td>
+    </tr>`;
+  }).join('');
+  d2Totals();
+}
+
+function d2Totals(){
+  var numC = parseInt(document.getElementById('d2_num_containers').value)||1;
+  var tq=0, ta=0;
+  d2Items.forEach(it=>{
+    var qty = (it.qty_per_container||0) * numC;
+    tq += qty; ta += qty * (it.rate||0);
+  });
+  document.getElementById('d2TotQty').textContent = tq.toFixed(2)+' MT';
+  document.getElementById('d2TotAmt').textContent = '$'+ta.toLocaleString('en-US',{minimumFractionDigits:2});
+}
+
+function d2v(id){return (document.getElementById(id)||{}).value||'';}
+
+async function d2LookupAddress(){
+  var consignee=document.getElementById('d2_consignee').value.trim();
+  if(!consignee)return;
+  try{
+    var res=await fetch('/api/proforma-smartfill',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({consignee_only:true,consignee:consignee})});
+    var data=await res.json();
+    if(data.consignee_address&&data.consignee_address.length)
+      document.getElementById('d2_consignee_address').value=data.consignee_address.join('\n');
+  }catch(e){}
+}
+
+async function smartFill2(){
+  var text=document.getElementById('smartInput2').value.trim(); if(!text)return;
+  var btn=document.getElementById('smartBtn2'); btn.disabled=true; btn.textContent='Thinking...';
+  showStatus('statusMsg2','Asking Gemini...','loading');
+  try{
+    var res=await fetch('/api/proforma-smartfill',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:text})});
+    var data=await res.json(); if(!res.ok)throw new Error(data.error||'Server error');
+    ['inv_no','inv_date','buyer_po','consignee','port_discharge',
+     'trade_terms','payment_term','shipment_allowance','country_of_origin'].forEach(f=>{
+      var el=document.getElementById('d2_'+f); if(el&&data[f])el.value=data[f];
+    });
+    // Handle freight_label via toggle
+    if(data.freight_label !== undefined) {
+      var matchBtn = document.querySelector('#freightToggleGroup [data-value="'+data.freight_label+'"]');
+      if(matchBtn) setFreight(matchBtn, data.freight_label);
+    }
+    if(data.consignee_address&&data.consignee_address.length)
+      document.getElementById('d2_consignee_address').value=data.consignee_address.join('\n');
+    if(data.containers&&data.containers.length){
+      var numC = data.containers.length;
+      document.getElementById('d2_num_containers').value = numC;
+      var firstItems = data.containers[0].items||[];
+      d2Items = firstItems.map(it=>({desc:it.desc||'', qty_per_container:parseFloat(it.qty)||0, rate:parseFloat(it.rate)||0}));
+      d2Render();
+      var summary = d2Items.map(it=>`${it.desc}: ${it.qty_per_container} MT x $${it.rate.toLocaleString()}`).join('  ·  ');
+      document.getElementById('smartFilled2').textContent = `Filled: ${numC} containers  ·  ${summary}`;
+      document.getElementById('smartFilled2').style.display='block';
+    }
+    hideStatus('statusMsg2');
+  }catch(e){showStatus('statusMsg2','Smart fill failed: '+e.message,'error');}
+  finally{btn.disabled=false;btn.textContent='Fill Form';}
+}
+
+async function d2GeneratePdf(){
+  var btn=document.getElementById('dlBtn2'); btn.disabled=true; btn.textContent='Generating...';
+  showStatus('statusMsg2','Generating PDF...','loading');
+  var addr=document.getElementById('d2_consignee_address').value.split('\n').map(l=>l.trim()).filter(Boolean);
+  var numC = parseInt(d2v('d2_num_containers'))||1;
+  var containers = [];
+  for(var i=0;i<numC;i++){
+    containers.push({
+      container_no: '(Container '+(i+1)+')',
+      items: d2Items.map(it=>({
+        desc: it.desc,
+        qty: parseFloat(it.qty_per_container)||0,
+        rate: parseFloat(it.rate)||0,
+        amount: (parseFloat(it.qty_per_container)||0)*(parseFloat(it.rate)||0)
+      }))
+    });
+  }
+  var payload={
+    inv_no:d2v('d2_inv_no'),inv_date:d2v('d2_inv_date'),buyer_po:d2v('d2_buyer_po'),
+    reference:d2v('d2_reference'),
+    purchase_person:'Marc Kang',prepared_by:'Marc Kang',
+    consignee:d2v('d2_consignee'),consignee_address:addr,port_discharge:d2v('d2_port_discharge'),
+    trade_terms:d2v('d2_trade_terms'),currency:'US Dollar ($)',payment_term:d2v('d2_payment_term'),
+    packaging:'Loose',shipment_allowance:d2v('d2_shipment_allowance'),
+    country_of_origin:d2v('d2_country_of_origin'),
+    freight_label:d2v('d2_freight_label'),
+    memo:'',
+    containers:containers
+  };
+  try{
+    var res=await fetch('/api/generate-proforma-dc2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    if(!res.ok){var err=await res.json();throw new Error(err.error||'Failed');}
+    var a=document.createElement('a'); a.href=URL.createObjectURL(await res.blob());
+    a.download=(d2v('d2_inv_no')||'PROFORMA')+'_PROFORMA.pdf'; a.click(); URL.revokeObjectURL(a.href);
+    hideStatus('statusMsg2');
+  }catch(e){showStatus('statusMsg2','Error: '+e.message,'error');}
+  finally{btn.disabled=false;btn.textContent='Generate PDF';}
+}
+
+function d2Reset(){
+  ['d2_inv_no','d2_inv_date','d2_buyer_po','d2_consignee','d2_consignee_address',
+   'd2_port_discharge','d2_trade_terms'].forEach(id=>{var el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('d2_reference').value='Proforma & Email Conf.';
+  document.getElementById('d2_num_containers').value='1';
+  // Reset freight toggle to default (included)
+  var defBtn = document.querySelector('#freightToggleGroup [data-value="CIF (freight included)"]');
+  if(defBtn) setFreight(defBtn,'CIF (freight included)');
+  d2Items=[]; d2Render(); hideStatus('statusMsg2');
+}
+
+// Init
+setToday();
+addRow('CONTAINER 1',DEF_DESC,DEF_MT,DEF_RATE);
+d2Items=[{desc:'AL Combo', qty_per_container:21, rate:0}];
+d2Render();
+</script>
+</body>
+</html>
