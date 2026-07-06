@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edge Metals Invoice Generation</title>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Manrope', sans-serif; background: #f8fafc; color: #0f172a; min-height: 100vh; }
+        body::before { content: ""; position: fixed; top: 0; left: 0; right: 0; height: 4px;
+            background: linear-gradient(90deg, #2E6DA4, #4a9fd4, #2E6DA4);
+            background-size: 200%; animation: shimmer 3s linear infinite; }
+        @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+        .topbar { display:flex; align-items:center; justify-content:space-between; padding:18px 40px;
+            background:white; border-bottom:1px solid #e2e8f0; }
+        .brand { display:flex; align-items:center; gap:10px; text-decoration:none; color:inherit; }
+        .logo-sq { width:32px; height:32px; background:#2E6DA4; border-radius:6px;
+            display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; color:white; }
+        .brand-name { font-size:14px; font-weight:700; color:#1e293b; }
+        .back-link { font-size:13px; font-weight:500; color:#2E6DA4; text-decoration:none; }
+        .back-link:hover { text-decoration:underline; }
+
+        .page { max-width:1100px; margin:40px auto; padding:0 24px 60px; }
+        h1 { font-size:24px; font-weight:800; margin-bottom:4px; }
+        .page-sub { font-size:14px; color:#64748b; margin-bottom:32px; }
+
+        .search-card { background:white; border:1.5px solid #e2e8f0; border-radius:14px; padding:28px; margin-bottom:24px; }
+        .search-row { display:flex; gap:12px; }
+        .search-input { flex:1; padding:11px 16px; border:1.5px solid #e2e8f0; border-radius:10px;
+            font-family:inherit; font-size:14px; font-weight:500; outline:none; transition:border-color 0.2s; }
+        .search-input:focus { border-color:#2E6DA4; }
+        .search-input::placeholder { color:#94a3b8; }
+        .btn { padding:11px 24px; border:none; border-radius:10px; font-family:inherit;
+            font-size:14px; font-weight:600; cursor:pointer; transition:all 0.2s; }
+        .btn-primary { background:#2E6DA4; color:white; }
+        .btn-primary:hover { background:#235a8a; }
+        .btn-outline { background:white; color:#2E6DA4; border:1.5px solid #2E6DA4; }
+        .btn-outline:hover { background:#f0f7ff; }
+        .btn-refresh { background:#f1f5f9; color:#475569; font-size:12px; padding:8px 14px; }
+        .btn-refresh:hover { background:#e2e8f0; }
+        .search-footer { display:flex; align-items:center; justify-content:space-between; margin-top:14px; }
+        .hint { font-size:12px; color:#94a3b8; }
+        .container-chip { display:flex; align-items:center; gap:6px; background:#f0f7ff;
+            border:1.5px solid #cbe0f5; color:#235a8a; font-size:12px; font-weight:600;
+            padding:5px 8px 5px 12px; border-radius:20px; }
+        .container-chip button { background:none; border:none; color:#235a8a; cursor:pointer;
+            font-size:14px; line-height:1; padding:0 2px; opacity:0.6; }
+        .container-chip button:hover { opacity:1; }
+
+        .error-msg { background:#fef2f2; border:1px solid #fecaca; color:#dc2626; padding:12px 16px;
+            border-radius:10px; font-size:13px; margin-bottom:16px; display:none; }
+        .loading { display:none; text-align:center; padding:40px; color:#64748b; font-size:14px; }
+        .spinner { width:24px; height:24px; border:3px solid #e2e8f0; border-top-color:#2E6DA4;
+            border-radius:50%; animation:spin 0.7s linear infinite; margin:0 auto 12px; }
+        @keyframes spin { to{transform:rotate(360deg)} }
+
+        .preview-card { background:white; border:1.5px solid #e2e8f0; border-radius:14px; overflow:hidden; display:none; }
+        .preview-header { padding:18px 28px; border-bottom:1px solid #e2e8f0;
+            display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+        .preview-title { font-size:16px; font-weight:700; }
+        .preview-actions { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+
+        /* 3-column editable grid */
+        .fields-grid { display:grid; grid-template-columns:1fr 1fr 1fr; }
+        .field-section { padding:16px 22px; border-bottom:1px solid #f1f5f9; border-right:1px solid #f1f5f9; }
+        .field-section:nth-child(3n) { border-right:none; }
+        .field-section.full { grid-column:1/-1; border-right:none; }
+        .section-title { font-size:10px; font-weight:700; letter-spacing:1.5px;
+            text-transform:uppercase; color:#94a3b8; margin-bottom:10px; }
+        .field-row { display:flex; align-items:center; gap:10px; margin-bottom:7px; }
+        .field-label { font-size:11px; color:#64748b; white-space:nowrap; width:120px; flex-shrink:0; }
+
+        .edit-input { font-family:inherit; font-size:12px; font-weight:600; color:#0f172a;
+            border:1.5px solid #e2e8f0; border-radius:6px; padding:4px 9px;
+            outline:none; transition:border-color 0.2s, background 0.2s;
+            flex:1; background:white; }
+        .edit-input:focus { border-color:#2E6DA4; background:#f0f7ff; }
+        .edit-input:hover:not([readonly]) { border-color:#cbd5e1; }
+        .edit-input.hi { color:#2E6DA4; }
+        .edit-input[readonly] { background:#f8fafc; color:#94a3b8; cursor:default; border-style:dashed; }
+        .edit-input::placeholder { color:#94a3b8; font-weight:400; }
+
+        .checkbox-label { display:flex; align-items:center; gap:8px; font-size:13px;
+            cursor:pointer; padding:6px 12px; border-radius:8px; transition:background 0.2s; user-select:none; }
+        .checkbox-label:hover { background:#f8fafc; }
+        .checkbox-label input[type="checkbox"] { cursor:pointer; width:16px; height:16px; accent-color:#2E6DA4; }
+
+        .line-items-wrapper { padding:16px 22px; overflow-x:auto; }
+        .line-items-title { font-size:10px; font-weight:700; letter-spacing:1.5px;
+            text-transform:uppercase; color:#94a3b8; margin-bottom:10px; }
+        .line-table { width:100%; border-collapse:collapse; min-width:950px; }
+        .line-table th { font-size:10px; font-weight:700; text-transform:uppercase;
+            color:#94a3b8; padding:6px 8px; text-align:left;
+            border-bottom:1.5px solid #e2e8f0; background:#f8fafc; white-space:nowrap; }
+        .line-table td { padding:4px 4px; border-bottom:1px solid #f8fafc; }
+        .line-table tr:last-child td { border-bottom:none; }
+        .row-badge { display:inline-block; background:#f1f5f9; color:#475569;
+            font-size:10px; font-weight:700; padding:2px 6px; border-radius:4px; }
+        .line-table .edit-input { font-size:11px; padding:3px 6px; min-width:55px; width:100%; }
+    </style>
+</head>
+<body>
+<div class="topbar">
+    <a href="/" class="brand">
+        <div class="logo-sq">EM</div>
+        <span class="brand-name">Edge Metals Inc.</span>
+    </a>
+    <a href="/" class="back-link">← Back to Portal</a>
+</div>
+
+<div class="page">
+    <h1>Invoice Generation</h1>
+    <p class="page-sub">Search by container number, edit any field, then download.</p>
+
+    <div class="search-card">
+        <div class="search-row">
+            <input id="containerInput" class="search-input" type="text"
+                   placeholder="Enter container number e.g. MSCU1234567" autocomplete="off">
+            <button class="btn btn-outline" onclick="addContainerChip()">+ Add</button>
+            <button class="btn btn-primary" onclick="doSearch()">Search</button>
+        </div>
+        <div id="containerChips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;"></div>
+        <div class="search-footer">
+            <span class="hint">Enter a container, click + Add for more, then Search · All fields are editable after search</span>
+            <button class="btn btn-refresh" onclick="doRefresh()">Refresh Sheet Data</button>
+        </div>
+    </div>
+
+    <div id="errorMsg" class="error-msg"></div>
+    <div id="loading" class="loading"><div class="spinner"></div>Searching...</div>
+
+    <div id="previewCard" class="preview-card">
+        <div class="preview-header">
+            <span class="preview-title" id="previewTitle">Invoice Preview</span>
+            <div class="preview-actions">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="separateCheck"/>
+                    <span>Separate Invoice &amp; Packing List</span>
+                </label>
+                <button class="btn btn-outline" onclick="doDownload()">Download PDF</button>
+            </div>
+        </div>
+
+        <div class="fields-grid">
+            <!-- Invoice Details -->
+            <div class="field-section">
+                <div class="section-title">Invoice Details</div>
+                <div class="field-row"><span class="field-label">Invoice No</span>
+                    <input class="edit-input hi" id="f_inv_no" type="text" placeholder="—"></div>
+                <div class="field-row"><span class="field-label">Invoice Date</span>
+                    <input class="edit-input" id="f_inv_date" type="text" placeholder="—"></div>
+                <div class="field-row"><span class="field-label">Reference</span>
+                    <input class="edit-input" id="f_reference" type="text" placeholder="—"></div>
+            </div>
+
+            <!-- Shipment -->
+            <div class="field-section">
+                <div class="section-title">Shipment Details</div>
+                <div class="field-row"><span class="field-label">Container #</span>
+                    <input class="edit-input" id="f_container" type="text" readonly></div>
+                <div class="field-row"><span class="field-label">Booking # override</span>
+                    <input class="edit-input" id="f_booking" type="text" placeholder="Leave blank to keep each row's own booking #"></div>
+                <div class="field-row"><span class="field-label">Seal # override</span>
+                    <input class="edit-input" id="f_seal" type="text" placeholder="Leave blank to keep each row's own seal #"></div>
+                <div class="field-row"><span class="field-label">Port of Loading</span>
+                    <input class="edit-input" id="f_pol" type="text" placeholder="—"></div>
+                <div class="field-row"><span class="field-label">Port of Discharge</span>
+                    <input class="edit-input" id="f_pod" type="text" placeholder="—"></div>
+                <div class="field-row"><span class="field-label">Place of Receipt</span>
+                    <input class="edit-input" id="f_receipt" type="text" placeholder="—"></div>
+            </div>
+
+            <!-- Buyer + Vessel -->
+            <div class="field-section">
+                <div class="section-title">Buyer</div>
+                <div class="field-row"><span class="field-label">Company</span>
+                    <input class="edit-input" id="f_consignee" type="text" placeholder="—"></div>
+                <div class="field-row"><span class="field-label">Terms</span>
+                    <input class="edit-input" id="f_terms" type="text" placeholder="—"></div>
+                <br>
+                <div class="section-title" style="margin-top:10px">Vessel / Flight No</div>
+                <div class="field-row"><span class="field-label">Vessel</span>
+                    <input class="edit-input" id="vesselInput" type="text" placeholder="Enter vessel…"></div>
+                <div class="field-row"><span class="field-label">Payment Terms</span>
+                    <input class="edit-input" id="f_payment_terms" type="text" placeholder="e.g. T/T 100% Against Shipping Documents"></div>
+            </div>
+
+            <!-- Financials -->
+            <div class="field-section full">
+                <div class="section-title">Financials</div>
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+                    <div class="field-row"><span class="field-label">Freight Deduction</span>
+                        <input class="edit-input" id="f_freight" type="text" placeholder="0.00"></div>
+                    <div class="field-row"><span class="field-label">EFS</span>
+                        <input class="edit-input" id="f_efs" type="text" placeholder="0.00"></div>
+                    <div class="field-row"><span class="field-label">Final Amount</span>
+                        <input class="edit-input hi" id="f_final" type="text" readonly placeholder="—"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Line Items + Packing Weights -->
+        <div class="line-items-wrapper" id="lineItemsWrapper" style="display:none;">
+            <div class="line-items-title">Line Items &amp; Packing Weights — all cells editable</div>
+            <table class="line-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Container</th>
+                        <th>Booking #</th>
+                        <th>Seal #</th>
+                        <th style="min-width:130px">Description</th>
+                        <th>Weight (MT)</th>
+                        <th>Rate</th>
+                        <th>Amount</th>
+                        <th>Gross (lbs)</th>
+                        <th>Truck (lbs)</th>
+                        <th>Tare (lbs)</th>
+                        <th>Chassis (lbs)</th>
+                        <th>Boxes (lbs)</th>
+                        <th>Net (lbs)</th>
+                        <th>Net (MT)</th>
+                    </tr>
+                </thead>
+                <tbody id="lineItemsBody"></tbody>
+            </table>
+        </div>
+
+        <!-- Invoice Notes -->
+        <div class="field-section full" style="border-top:1px solid #f1f5f9;">
+            <div class="section-title">Invoice Notes
+                <span style="font-weight:500;letter-spacing:0;text-transform:none;color:#94a3b8;">
+                    — extra rows on the invoice table · negative amount deducts from total, positive adds
+                </span>
+            </div>
+            <div id="notesContainer"></div>
+            <button class="btn btn-refresh" type="button" onclick="addNoteRow()">+ Add Note</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentContainer = '';
+    let currentContainers = [];   // all containers combined into the current preview
+    let containerChips = [];      // containers added via +Add, not yet searched
+
+    function renderContainerChips() {
+        const wrap = document.getElementById('containerChips');
+        wrap.innerHTML = containerChips.map((c, i) => `
+            <span class="container-chip">${esc(c)}
+                <button type="button" onclick="removeContainerChip(${i})">✕</button>
+            </span>
+        `).join('');
+    }
+
+    function addContainerChip() {
+        const input = document.getElementById('containerInput');
+        const val = input.value.trim().toUpperCase();
+        if (!val) return;
+        if (!containerChips.includes(val)) containerChips.push(val);
+        input.value = '';
+        renderContainerChips();
+    }
+
+    function removeContainerChip(idx) {
+        containerChips.splice(idx, 1);
+        renderContainerChips();
+    }
+
+    document.getElementById('containerInput').addEventListener('keydown', e => {
+        if (e.key === 'Enter') doSearch();
+    });
+
+    ['f_freight','f_efs'].forEach(id => {
+        document.getElementById(id).addEventListener('input', recalcFinal);
+    });
+
+    function recalcFinal() {
+        const sub     = parseFloat(window._subtotal || 0);
+        const freight = parseFloat(document.getElementById('f_freight').value.replace(/[^0-9.-]/g,'')) || 0;
+        const efs     = parseFloat(document.getElementById('f_efs').value.replace(/[^0-9.-]/g,'')) || 0;
+        const notes   = collectNoteRows().reduce((s, n) => s + (parseFloat(n.amount) || 0), 0);
+        document.getElementById('f_final').value = '$' +
+            (sub + notes - freight - efs).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+    }
+
+    function addNoteRow(text, amount) {
+        const row = document.createElement('div');
+        row.className = 'field-row note-row';
+        row.innerHTML = `
+            <input class="edit-input" data-note-text placeholder="e.g. Payment received for 26NM05,06,02"
+                   style="flex:3;text-align:left" value="${esc(text || '')}">
+            <input class="edit-input" data-note-amount placeholder="Amount e.g. -98146.20 (optional)"
+                   style="flex:1" value="${esc(amount || '')}">
+            <button class="btn btn-refresh" type="button" style="padding:4px 10px"
+                    onclick="this.parentElement.remove(); recalcFinal();">✕</button>`;
+        row.querySelector('[data-note-amount]').addEventListener('input', recalcFinal);
+        document.getElementById('notesContainer').appendChild(row);
+    }
+
+    function collectLineItemOverrides() {
+        return Array.from(document.querySelectorAll('#lineItemsBody tr')).map(tr => {
+            const get = (field) => {
+                const el = tr.querySelector(`[data-field="${field}"]`);
+                return el ? el.value.trim() : '';
+            };
+            return {
+                item_desc:        get('item_desc'),
+                weight:           get('weight'),
+                price:            get('price'),
+                amount:           get('amount'),
+                gross_weight_lbs: get('gross_weight_lbs'),
+                truck_lbs:        get('truck_lbs'),
+                container_tare:   get('container_tare'),
+                chassis_lbs:      get('chassis_lbs'),
+                boxes_lbs:        get('boxes_lbs'),
+                net_weight_lbs:   get('net_weight_lbs'),
+                net_weight_mt:    get('net_weight_mt'),
+                // per-item container/booking/seal, preserved from the preview
+                // response (not user-editable here) — see multi-container fix.
+                container_no: tr.dataset.containerNo || '',
+                booking_no:   tr.dataset.bookingNo   || '',
+                seal_no:      tr.dataset.sealNo      || '',
+            };
+        });
+    }
+
+    function collectNoteRows() {
+        return Array.from(document.querySelectorAll('#notesContainer .note-row')).map(row => ({
+            text:   row.querySelector('[data-note-text]').value.trim(),
+            amount: row.querySelector('[data-note-amount]').value.replace(/[^0-9.-]/g,'').trim(),
+        })).filter(n => n.text || n.amount);
+    }
+
+    async function doSearch() {
+        // Typing + Enter/Search always folds whatever's in the box into the
+        // chip list first — preserves the old single-container flow (type,
+        // hit Enter, done) while letting multi-container work the same way
+        // (add several chips first, or just keep typing + Enter for each one).
+        const pending = document.getElementById('containerInput').value.trim().toUpperCase();
+        if (pending && !containerChips.includes(pending)) containerChips.push(pending);
+        document.getElementById('containerInput').value = '';
+        renderContainerChips();
+
+        if (containerChips.length === 0) return;
+
+        showLoading(true); hidePreview(); hideError();
+        try {
+            const res  = await fetch('/api/preview', {
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({container_nos: containerChips})
+            });
+            const data = await res.json();
+            showLoading(false);
+            if (data.error) { showError(data.error); return; }
+            renderPreview(data);
+            currentContainer  = data.container_no;
+            currentContainers = data.container_nos || [data.container_no];
+        } catch(e) { showLoading(false); showError('Network error. Please try again.'); }
+    }
+
+    async function doRefresh() {
+        const btn = event.target;
+        btn.textContent = 'Refreshing...'; btn.disabled = true;
+        try {
+            await fetch('/api/refresh', {method:'POST'});
+            btn.textContent = '✓ Refreshed';
+            setTimeout(() => { btn.textContent = 'Refresh Sheet Data'; btn.disabled = false; }, 2500);
+        } catch(e) { btn.textContent = 'Refresh Sheet Data'; btn.disabled = false; }
+    }
+
+    async function doDownload() {
+        if (!currentContainers.length && !currentContainer) return;
+        const separate = document.getElementById('separateCheck').checked;
+        const btn = event.target;
+        btn.textContent = separate ? 'Generating...' : 'Downloading...';
+        btn.disabled = true;
+
+        // Collect all editable overrides
+        const overrides = {
+            container_nos:    currentContainers.length ? currentContainers : [currentContainer],
+            separate,
+            vessel:           v('vesselInput'),
+            terms:            v('f_terms'),
+            payment_terms:    v('f_payment_terms'),
+            inv_no:           v('f_inv_no'),
+            inv_date:         v('f_inv_date'),
+            reference:        v('f_reference'),
+            booking_no:       v('f_booking'),
+            seal_no:          v('f_seal'),
+            port_loading:     v('f_pol'),
+            port_discharge:   v('f_pod'),
+            place_of_receipt: v('f_receipt'),
+            freight:          v('f_freight').replace(/[^0-9.-]/g,''),
+            efs:              v('f_efs').replace(/[^0-9.-]/g,''),
+            note_rows:        collectNoteRows(),
+            line_items_override: collectLineItemOverrides(),
+        };
+
+        try {
+            const res = await fetch('/api/generate', {
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body: JSON.stringify(overrides)
+            });
+            if (!res.ok) {
+                const err = await res.json();
+                showError(err.error || 'Failed to generate PDF.');
+                btn.textContent = 'Download PDF'; btn.disabled = false; return;
+            }
+            const blob = await res.blob();
+            const url  = URL.createObjectURL(blob);
+            const a    = document.createElement('a');
+            a.href = url;
+            const containerLabel = (currentContainers.length ? currentContainers : [currentContainer]).join('_');
+            a.download = separate ? containerLabel + '_DOCUMENTS.zip' : `Invoice and Packing list_${containerLabel}.pdf`;
+            a.click(); URL.revokeObjectURL(url);
+        } catch(e) { showError('Download failed. Please try again.'); }
+        btn.textContent = 'Download PDF'; btn.disabled = false;
+    }
+
+    function renderPreview(data) {
+        document.getElementById('notesContainer').innerHTML = '';   // notes are per-invoice — don't leak across searches
+        document.getElementById('f_payment_terms').value = '';      // no sheet column backs this — must not leak across searches either
+        document.getElementById('previewTitle').textContent = `Invoice ${data.container_no}`;
+        const p = data.preview || {};
+        const inv = p.invoice || {}, ship = p.shipment || {}, buyer = p.buyer || {}, fin = p.financials || {};
+
+        const isMultiContainer = (data.container_nos || []).length > 1;
+        set('f_inv_no',    inv['Invoice No']   || '');
+        set('f_inv_date',  inv['Invoice Date'] || '');
+        set('f_reference', inv['Reference']    || '');
+        set('f_container', (data.container_nos || [data.container_no]).join(', '));
+        // Only prefill booking/seal when there's ONE container — for multiple
+        // containers these are override-only fields (see the label above);
+        // prefilling with the first container's value here would silently
+        // stamp every row with it the moment someone hits Download without
+        // touching this field, recreating the exact bug this session fixed.
+        set('f_booking', isMultiContainer ? '' : (ship['Booking #'] || ''));
+        set('f_seal',    isMultiContainer ? '' : (ship['Seal #']    || ''));
+        set('f_pol',       ship['Port of Loading']   || '');
+        set('f_pod',       ship['Port of Discharge'] || '');
+        set('f_receipt',   ship['Place of Receipt']  || '');
+        set('f_consignee', buyer['Company'] || '');
+        set('f_terms',     buyer['Terms']   || '');
+
+        const fRaw = (fin['Freight Deduction'] || '').replace('$','').replace(/,/g,'').replace('—','');
+        const eRaw = (fin['EFS']               || '').replace('$','').replace(/,/g,'').replace('—','');
+        set('f_freight', fRaw);
+        set('f_efs',     eRaw);
+
+        window._subtotal = (data.line_items || []).reduce((s, item) => {
+            return s + parseFloat((item.amount || '0').replace('$','').replace(/,/g,'') || 0);
+        }, 0);
+        recalcFinal();
+
+        // Line items
+        const tbody = document.getElementById('lineItemsBody');
+        const wrapper = document.getElementById('lineItemsWrapper');
+        tbody.innerHTML = '';
+        const items = data.line_items || [];
+        if (items.length > 0) {
+            items.forEach((item, idx) => {
+                const tr = document.createElement('tr');
+                // container/booking/seal are per-item now (multi-container support) —
+                // stored as data attrs, not editable inputs, so they survive the
+                // override round-trip without cluttering the table with 3 more columns.
+                tr.dataset.containerNo = item.container_no || '';
+                tr.dataset.bookingNo   = item.booking_no   || '';
+                tr.dataset.sealNo      = item.seal_no      || '';
+                tr.innerHTML = `
+                    <td><span class="row-badge">${idx+1}</span></td>
+                    <td><span style="font-size:11px;color:#64748b;">${esc(item.container_no || '—')}</span></td>
+                    <td><span style="font-size:11px;color:#64748b;">${esc(item.booking_no || '—')}</span></td>
+                    <td><span style="font-size:11px;color:#64748b;">${esc(item.seal_no || '—')}</span></td>
+                    <td><input class="edit-input" data-field="item_desc" value="${esc(item.item_desc)}" style="min-width:130px;text-align:left"></td>
+                    <td><input class="edit-input" data-field="weight" value="${esc(item.weight)}"></td>
+                    <td><input class="edit-input" data-field="price" value="${esc(item.price)}"></td>
+                    <td><input class="edit-input hi" data-field="amount" value="${esc(item.amount)}"></td>
+                    <td><input class="edit-input" data-field="gross_weight_lbs" value="${esc(item.gross_weight_lbs)}"></td>
+                    <td><input class="edit-input" data-field="truck_lbs" value="${esc(item.truck_lbs)}"></td>
+                    <td><input class="edit-input" data-field="container_tare" value="${esc(item.container_tare)}"></td>
+                    <td><input class="edit-input" data-field="chassis_lbs" value="${esc(item.chassis_lbs)}"></td>
+                    <td><input class="edit-input" data-field="boxes_lbs" value="${esc(item.boxes_lbs)}"></td>
+                    <td><input class="edit-input" data-field="net_weight_lbs" value="${esc(item.net_weight_lbs)}"></td>
+                    <td><input class="edit-input" data-field="net_weight_mt" value="${esc(item.net_weight_mt)}"></td>
+                `;
+                tbody.appendChild(tr);
+            });
+            wrapper.style.display = 'block';
+        } else {
+            wrapper.style.display = 'none';
+        }
+
+        document.getElementById('previewCard').style.display = 'block';
+    }
+
+    function v(id)      { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+    function set(id, val) { const el = document.getElementById(id); if (el) el.value = val || ''; }
+    function esc(s)     { return (s || '').replace(/"/g, '&quot;'); }
+    function showLoading(show) { document.getElementById('loading').style.display = show ? 'block' : 'none'; }
+    function hidePreview()     { document.getElementById('previewCard').style.display = 'none'; }
+    function showError(msg)    { const el = document.getElementById('errorMsg'); el.textContent = msg; el.style.display = 'block'; }
+    function hideError()       { document.getElementById('errorMsg').style.display = 'none'; }
+</script>
+</body>
+</html>
