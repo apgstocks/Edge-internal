@@ -321,6 +321,66 @@ COMMODITY_CODES = {
 }
 
 
+def collapse_inv_nos(inv_nos) -> str:
+    """
+    Collapse a list of invoice numbers using the "same-base shares tails" rule:
+      Same prefix (everything up to the trailing digit run) → prefix + tail1,tail2,tail3
+      Different prefixes → comma-join the fulls.
+    Preserves input order. De-duplicates identical inv_nos.
+
+    Examples:
+      ["260331_Rotors_26MGK11",
+       "260331_Rotors_26MGK12",
+       "260331_Rotors_26MGK13"]  → "260331_Rotors_26MGK11,12,13"
+
+      ["260331_Rotors_26MGK11",
+       "260331_AWD_26MGK12"]     → "260331_Rotors_26MGK11, 260331_AWD_26MGK12"
+
+      ["260331_Rotors_26MGK11"]  → "260331_Rotors_26MGK11"
+      []                          → ""
+
+    Notes on grouping: consecutive entries with identical prefix collapse together.
+    If the caller sends interleaved commodities (Rotors, AWD, Rotors) they'll form
+    three separate groups — dedup+order-preserving, no re-sorting. This mirrors the
+    "keep the operator's order" convention used elsewhere for container_nos.
+    """
+    import re
+    seen, unique = set(), []
+    for inv in inv_nos:
+        s = str(inv).strip() if inv is not None else ""
+        if s and s not in seen:
+            seen.add(s)
+            unique.append(s)
+    if not unique:
+        return ""
+    if len(unique) == 1:
+        return unique[0]
+
+    parsed = []
+    for inv in unique:
+        m = re.match(r'^(.*?)(\d+)$', inv)
+        if m:
+            parsed.append((m.group(1), m.group(2)))
+        else:
+            parsed.append((inv, ""))
+
+    # Group only CONSECUTIVE same-prefix entries
+    groups = []
+    for prefix, tail in parsed:
+        if groups and groups[-1][0] == prefix:
+            groups[-1][1].append(tail)
+        else:
+            groups.append([prefix, [tail]])
+
+    parts = []
+    for prefix, tails in groups:
+        if len(tails) == 1:
+            parts.append(prefix + tails[0])
+        else:
+            parts.append(prefix + ",".join(tails))
+    return ", ".join(parts)
+
+
 def resolve_item_desc(item_desc: str, inv_no: str) -> str:
     """
     If item_desc is blank, extract commodity code from invoice number and map it.
@@ -551,6 +611,20 @@ def rows_to_invoice_data(container_rows: list) -> Dict[str, Any]:
     print(f"  💰 line item freight values: {[item['freight_charge'] for item in line_items]}")
     first["freight_charge"] = str(freight_val) if freight_val else ""
     first["efs"]            = str(efs_val)     if efs_val     else ""
+
+    # Multi-container inv_no aggregation:
+    # By default `first["inv_no"]` = container[0]'s inv_no. When rows come from
+    # multiple containers (via --extra-containers), collapse all distinct inv_nos
+    # using the "same-base shares tails" rule so the PDF header shows
+    # "260331_Rotors_26MGK11,12,13" instead of just container[0]'s number.
+    # Done AFTER the line_items loop above so resolve_item_desc() keeps using
+    # the ORIGINAL first-row inv_no for its commodity-code fallback (unchanged
+    # behavior for the single-container case).
+    row_inv_nos = [safe_str(row_to_dict(r).get("inv_no", "")) for r in container_rows]
+    collapsed = collapse_inv_nos(row_inv_nos)
+    if collapsed:
+        first["inv_no"] = collapsed
+
     first["line_items"] = line_items
     return first
 
