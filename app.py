@@ -16,6 +16,7 @@ import shutil
 import requests
 import zipfile
 from datetime import datetime
+from invoice_gen import collapse_inv_nos
 
 app = Flask(__name__)
 
@@ -346,7 +347,16 @@ def api_preview():
     first_container = container_nos[0]
     first_row_num, first_row, _ = combined[0]
 
-    inv_no    = safe_get(first_row,  1, "N/A")
+    # inv_no: for a single container this is just the first row's value.
+    # For multi-container, collapse all rows' inv_nos using the same
+    # "same-base shares tails" rule the PDF backend uses, so the UI's
+    # f_inv_no field is pre-populated with e.g. "260331_Rotors_26MGK11,12,13"
+    # instead of just container[0]'s inv_no. This matters because if the user
+    # leaves f_inv_no blank on Download, /api/generate sends __CLEAR__ and
+    # wipes the value — pre-populating the correct collapsed form here
+    # prevents that trap on the multi-container flow.
+    all_row_inv_nos = [safe_get(row, 1, "") for _, row, _ in combined]
+    inv_no    = collapse_inv_nos(all_row_inv_nos) or safe_get(first_row, 1, "N/A")
     inv_date  = safe_get(first_row,  2, "N/A")
     consignee = safe_get(first_row,  0, "N/A")
     terms     = safe_get(first_row,  8, "N/A")
