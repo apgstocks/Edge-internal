@@ -282,13 +282,18 @@ body::before{content:'';position:fixed;top:0;left:0;right:0;height:4px;
       <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px;padding:12px 14px;background:#f0fdf0;border-radius:9px;border:1.5px solid #bbf0b8">
         <label style="font-size:11px;font-weight:700;color:#2A7D24;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap">Number of Containers</label>
         <input type="number" id="d2_num_containers" value="1" min="1" max="20" style="width:80px;padding:7px 10px;border:1.5px solid #bbf0b8;border-radius:7px;font-family:'Manrope',sans-serif;font-size:14px;font-weight:700;color:#1A211B;text-align:center;outline:none" oninput="d2Render()"/>
+        <label style="font-size:11px;font-weight:700;color:#2A7D24;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;margin-left:8px">Unit</label>
+        <select id="d2_qty_unit" style="padding:7px 10px;border:1.5px solid #bbf0b8;border-radius:7px;font-family:'Manrope',sans-serif;font-size:14px;font-weight:700;color:#1A211B;outline:none;background:#fff" onchange="d2UnitChanged()">
+          <option value="MT" selected>MT</option>
+          <option value="LBS">LBS</option>
+        </select>
         <span style="font-size:12px;color:#64748b">Enter qty per container below — totals auto-calculate</span>
       </div>
       <table style="width:100%;border-collapse:collapse">
         <thead><tr>
           <th style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;padding:8px 10px;text-align:left;border-bottom:1.5px solid #e2e8f0;width:38%">Description</th>
-          <th style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;padding:8px 10px;text-align:right;border-bottom:1.5px solid #e2e8f0;width:18%">Qty / Container (MT)</th>
-          <th style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;padding:8px 10px;text-align:right;border-bottom:1.5px solid #e2e8f0;width:18%">Rate ($/MT)</th>
+          <th style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;padding:8px 10px;text-align:right;border-bottom:1.5px solid #e2e8f0;width:18%">Qty / Container (<span id="d2UnitHdr1">MT</span>)</th>
+          <th style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;padding:8px 10px;text-align:right;border-bottom:1.5px solid #e2e8f0;width:18%">Rate ($/<span id="d2UnitHdr2">MT</span>)</th>
           <th style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;padding:8px 10px;text-align:right;border-bottom:1.5px solid #e2e8f0;width:20%">Total Amount</th>
           <th style="border-bottom:1.5px solid #e2e8f0;width:6%"></th>
         </tr></thead>
@@ -355,7 +360,7 @@ body::before{content:'';position:fixed;top:0;left:0;right:0;height:4px;
 </div>
 
 <script>
-const GEMINI_KEY = 'AQ.Ab8RN6KzHJnCcTocHKXzx3DbYOTMnlil85ww3SCbeY55A1Hp1A';
+const GEMINI_KEY = 'AQ.Ab8RN6LUuYbkGu1u9eJVXNfhSsV6x13rhJAnoHSqxFFghv33cQ';
 
 // ── Tabs ──────────────────────────────────────────────────────────
 function switchTab(name, btn) {
@@ -604,7 +609,7 @@ function d2Render(){
         onchange="d2UpdItem(${i},'rate',parseFloat(this.value)||0)"></td>
       <td style="padding:6px 10px;text-align:right;font-weight:600;font-size:13px;color:#1A211B">
         $${totalAmt.toLocaleString('en-US',{minimumFractionDigits:2})}
-        <div style="font-size:10px;font-weight:400;color:#94a3b8">${totalQty.toFixed(2)} MT total</div>
+        <div style="font-size:10px;font-weight:400;color:#94a3b8">${totalQty.toFixed(2)} ${d2v('d2_qty_unit')||'MT'} total</div>
       </td>
       <td style="padding:6px 2px"><button class="btn-del-row" onclick="d2RemoveItem(${i})">&#215;</button></td>
     </tr>`;
@@ -614,13 +619,21 @@ function d2Render(){
 
 function d2Totals(){
   var numC = parseInt(document.getElementById('d2_num_containers').value)||1;
+  var unit = d2v('d2_qty_unit')||'MT';
   var tq=0, ta=0;
   d2Items.forEach(it=>{
     var qty = (it.qty_per_container||0) * numC;
     tq += qty; ta += qty * (it.rate||0);
   });
-  document.getElementById('d2TotQty').textContent = tq.toFixed(2)+' MT';
+  document.getElementById('d2TotQty').textContent = tq.toFixed(2)+' '+unit;
   document.getElementById('d2TotAmt').textContent = '$'+ta.toLocaleString('en-US',{minimumFractionDigits:2});
+}
+
+function d2UnitChanged(){
+  var unit = d2v('d2_qty_unit')||'MT';
+  document.getElementById('d2UnitHdr1').textContent = unit;
+  document.getElementById('d2UnitHdr2').textContent = unit;
+  d2Render();
 }
 
 function d2v(id){return (document.getElementById(id)||{}).value||'';}
@@ -696,6 +709,7 @@ async function d2GeneratePdf(){
     packaging:'Loose',shipment_allowance:d2v('d2_shipment_allowance'),
     country_of_origin:d2v('d2_country_of_origin'),
     freight_label:d2v('d2_freight_label'),
+    qty_unit:d2v('d2_qty_unit')||'MT',
     memo:'',
     containers:containers
   };
