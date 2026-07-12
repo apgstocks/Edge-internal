@@ -87,18 +87,59 @@ def _amount_in_words(amount: float) -> str:
     return "US Dollars " + " ".join(parts) + " Only"
 
 
+def _format_rate(value) -> str:
+    """Format a per-unit rate preserving exactly the precision the person
+    typed on the website — 1.47 stays $1.47, 0.4256 stays $0.4256 — never
+    rounded to a fixed 0 or 2 decimals. Only floor: 2 decimals minimum, so
+    whole numbers still read as $1.00, not $1. Mirrors format_rate() in
+    invoice_gen.py; kept as a local copy since this module doesn't import
+    invoice_gen.py elsewhere.
+    """
+    from decimal import Decimal
+    d = Decimal(str(value)).normalize()
+    if d.as_tuple().exponent > 0:
+        d = d.quantize(Decimal(1))
+    if d.as_tuple().exponent > -2:
+        d = d.quantize(Decimal("0.01"))
+    return f"${d:,f}"
+
+
+def _format_qty(value) -> str:
+    """Comma-separated, 2 decimals, always — same treatment regardless of
+    whether the number is 21 or 44000. No magnitude-based branching, so a
+    quantity displays exactly as entered on the website, just formatted
+    for readability."""
+    return f"{float(value):,.2f}"
+
+
 def render_proforma_dc2_html(data: Dict[str, Any]) -> str:
     """Build the filled HTML string from invoice data. Exposed separately
     from PDF generation so the form/UI can preview it in an iframe too."""
     containers = data.get("containers", [])
     total_qty = 0.0
     total_due = 0.0
+    # Build a render-only copy of containers with pre-formatted strings per
+    # item, so the template does no magnitude-dependent formatting logic —
+    # every quantity and rate is displayed exactly as entered on the
+    # website (proforma.html), just formatted for readability, with no
+    # automatic unit relabeling or precision changes based on value size.
+    render_containers = []
     for cont in containers:
+        render_items = []
         for item in cont.get("items", []):
             qty = float(item.get("qty", 0))
             rate = float(item.get("rate", 0))
             total_qty += qty
             total_due += qty * rate
+            render_items.append({
+                "desc":      item.get("desc", ""),
+                "qty":       qty,
+                "rate":      rate,
+                "qty_fmt":   _format_qty(qty),
+                "rate_fmt":  _format_rate(rate),
+                "amount_fmt": f"${qty*rate:,.2f}",
+            })
+        render_containers.append({"container_no": cont.get("container_no", ""), "items": render_items})
     if data.get("total_due"):
         total_due = float(data["total_due"])
 
@@ -142,9 +183,15 @@ def render_proforma_dc2_html(data: Dict[str, Any]) -> str:
         consignee_address_line=consignee_address_line,
         consignee_contact_line=consignee_contact_line,
         terms_cells=terms_cells,
-        containers=containers,
+        containers=render_containers,
         total_qty=total_qty,
+        total_qty_fmt=_format_qty(total_qty),
         total_due=total_due,
+        # Unit is whatever the person explicitly selected on the form's
+        # MT/LBS dropdown — never inferred from the size of the number.
+        # Defaults to "MT" only if the field is missing entirely (e.g. an
+        # older saved draft), matching the website's original behavior.
+        qty_unit=data.get("qty_unit", "MT"),
         amount_in_words=_amount_in_words(total_due),
         trade_terms_short=trade_terms_short,
         freight_status=freight_status,
