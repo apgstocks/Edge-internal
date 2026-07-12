@@ -347,7 +347,13 @@ def collapse_inv_nos(inv_nos) -> str:
     import re
     seen, unique = set(), []
     for inv in inv_nos:
-        s = str(inv).strip() if inv is not None else ""
+        # Normalize whitespace: sheet data occasionally has stray spaces
+        # (e.g. "260331 _Rotors_26MGK11" on some rows, "260331_Rotors_26MGK14"
+        # on others). Without this, prefixes wouldn't match and same-commodity
+        # containers would split into separate groups. The canonical inv_no
+        # format has no whitespace anywhere, so stripping all whitespace is
+        # safe and produces a consistent output regardless of sheet hygiene.
+        s = re.sub(r'\s+', '', str(inv)) if inv is not None else ""
         if s and s not in seen:
             seen.add(s)
             unique.append(s)
