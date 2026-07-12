@@ -12,7 +12,6 @@
             background: linear-gradient(90deg, #2E6DA4, #4a9fd4, #2E6DA4);
             background-size: 200%; animation: shimmer 3s linear infinite; }
         @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
-
         .topbar { display:flex; align-items:center; justify-content:space-between; padding:18px 40px;
             background:white; border-bottom:1px solid #e2e8f0; }
         .brand { display:flex; align-items:center; gap:10px; text-decoration:none; color:inherit; }
@@ -21,11 +20,9 @@
         .brand-name { font-size:14px; font-weight:700; color:#1e293b; }
         .back-link { font-size:13px; font-weight:500; color:#2E6DA4; text-decoration:none; }
         .back-link:hover { text-decoration:underline; }
-
         .page { max-width:1100px; margin:40px auto; padding:0 24px 60px; }
         h1 { font-size:24px; font-weight:800; margin-bottom:4px; }
         .page-sub { font-size:14px; color:#64748b; margin-bottom:32px; }
-
         .search-card { background:white; border:1.5px solid #e2e8f0; border-radius:14px; padding:28px; margin-bottom:24px; }
         .search-row { display:flex; gap:12px; }
         .search-input { flex:1; padding:11px 16px; border:1.5px solid #e2e8f0; border-radius:10px;
@@ -48,20 +45,17 @@
         .container-chip button { background:none; border:none; color:#235a8a; cursor:pointer;
             font-size:14px; line-height:1; padding:0 2px; opacity:0.6; }
         .container-chip button:hover { opacity:1; }
-
         .error-msg { background:#fef2f2; border:1px solid #fecaca; color:#dc2626; padding:12px 16px;
             border-radius:10px; font-size:13px; margin-bottom:16px; display:none; }
         .loading { display:none; text-align:center; padding:40px; color:#64748b; font-size:14px; }
         .spinner { width:24px; height:24px; border:3px solid #e2e8f0; border-top-color:#2E6DA4;
             border-radius:50%; animation:spin 0.7s linear infinite; margin:0 auto 12px; }
         @keyframes spin { to{transform:rotate(360deg)} }
-
         .preview-card { background:white; border:1.5px solid #e2e8f0; border-radius:14px; overflow:hidden; display:none; }
         .preview-header { padding:18px 28px; border-bottom:1px solid #e2e8f0;
             display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
         .preview-title { font-size:16px; font-weight:700; }
         .preview-actions { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-
         /* 3-column editable grid */
         .fields-grid { display:grid; grid-template-columns:1fr 1fr 1fr; }
         .field-section { padding:16px 22px; border-bottom:1px solid #f1f5f9; border-right:1px solid #f1f5f9; }
@@ -71,7 +65,6 @@
             text-transform:uppercase; color:#94a3b8; margin-bottom:10px; }
         .field-row { display:flex; align-items:center; gap:10px; margin-bottom:7px; }
         .field-label { font-size:11px; color:#64748b; white-space:nowrap; width:120px; flex-shrink:0; }
-
         .edit-input { font-family:inherit; font-size:12px; font-weight:600; color:#0f172a;
             border:1.5px solid #e2e8f0; border-radius:6px; padding:4px 9px;
             outline:none; transition:border-color 0.2s, background 0.2s;
@@ -81,12 +74,35 @@
         .edit-input.hi { color:#2E6DA4; }
         .edit-input[readonly] { background:#f8fafc; color:#94a3b8; cursor:default; border-style:dashed; }
         .edit-input::placeholder { color:#94a3b8; font-weight:400; }
-
+        /* Amber tint for a manually-overridden Final Amount — signals to future-you
+           (or your accounts team) that the printed TOTAL was set by hand, not
+           computed from line items. Matches the "(adjusted)" annotation in the PDF. */
+        .edit-input.override-active { background:#fffbeb; border-color:#f59e0b; color:#b45309; }
+        .reset-link { font-size:10px; color:#94a3b8; text-decoration:none; margin-left:6px;
+            cursor:pointer; user-select:none; display:none; white-space:nowrap; }
+        .reset-link:hover { color:#2E6DA4; text-decoration:underline; }
+        .reset-link.visible { display:inline; }
+        /* "Load previous edits" banner — sits at the top of the preview card
+           only when the backend reports saved_overrides for this container.
+           Amber, not error-red — this is informational, not a warning. */
+        .load-saved-banner { display:none; background:#fffbeb; border-bottom:1px solid #fde68a;
+            padding:12px 28px; font-size:13px; color:#92400e;
+            display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+        .load-saved-banner.visible { display:flex; }
+        .load-saved-banner .msg { flex:1; min-width:200px; }
+        .load-saved-banner .msg b { color:#78350f; }
+        .load-saved-banner .actions { display:flex; gap:8px; }
+        .load-saved-banner .btn-load { background:#f59e0b; color:white; border:none;
+            border-radius:6px; padding:6px 14px; font-family:inherit; font-size:12px;
+            font-weight:600; cursor:pointer; }
+        .load-saved-banner .btn-load:hover { background:#d97706; }
+        .load-saved-banner .btn-dismiss { background:transparent; border:none; color:#92400e;
+            cursor:pointer; font-size:12px; font-weight:500; padding:6px 8px; }
+        .load-saved-banner .btn-dismiss:hover { text-decoration:underline; }
         .checkbox-label { display:flex; align-items:center; gap:8px; font-size:13px;
             cursor:pointer; padding:6px 12px; border-radius:8px; transition:background 0.2s; user-select:none; }
         .checkbox-label:hover { background:#f8fafc; }
         .checkbox-label input[type="checkbox"] { cursor:pointer; width:16px; height:16px; accent-color:#2E6DA4; }
-
         .line-items-wrapper { padding:16px 22px; overflow-x:auto; }
         .line-items-title { font-size:10px; font-weight:700; letter-spacing:1.5px;
             text-transform:uppercase; color:#94a3b8; margin-bottom:10px; }
@@ -109,11 +125,9 @@
     </a>
     <a href="/" class="back-link">← Back to Portal</a>
 </div>
-
 <div class="page">
     <h1>Invoice Generation</h1>
     <p class="page-sub">Search by container number, edit any field, then download.</p>
-
     <div class="search-card">
         <div class="search-row">
             <input id="containerInput" class="search-input" type="text"
@@ -127,10 +141,8 @@
             <button class="btn btn-refresh" onclick="doRefresh()">Refresh Sheet Data</button>
         </div>
     </div>
-
     <div id="errorMsg" class="error-msg"></div>
     <div id="loading" class="loading"><div class="spinner"></div>Searching...</div>
-
     <div id="previewCard" class="preview-card">
         <div class="preview-header">
             <span class="preview-title" id="previewTitle">Invoice Preview</span>
@@ -142,7 +154,17 @@
                 <button class="btn btn-outline" onclick="doDownload()">Download PDF</button>
             </div>
         </div>
-
+        <!-- "Load previous edits" banner. Appears only when this container has
+             a previous /api/generate on record. User-driven — not auto-applied,
+             so a search shows fresh sheet data by default and manual overrides
+             only land when explicitly requested. -->
+        <div id="loadSavedBanner" class="load-saved-banner">
+            <div class="msg" id="loadSavedMsg"></div>
+            <div class="actions">
+                <button type="button" class="btn-load" onclick="loadSavedOverrides()">Load previous edits</button>
+                <button type="button" class="btn-dismiss" onclick="dismissSavedBanner()">Dismiss</button>
+            </div>
+        </div>
         <div class="fields-grid">
             <!-- Invoice Details -->
             <div class="field-section">
@@ -154,7 +176,6 @@
                 <div class="field-row"><span class="field-label">Reference</span>
                     <input class="edit-input" id="f_reference" type="text" placeholder="—"></div>
             </div>
-
             <!-- Shipment -->
             <div class="field-section">
                 <div class="section-title">Shipment Details</div>
@@ -164,6 +185,11 @@
                     <input class="edit-input" id="f_booking" type="text" placeholder="Leave blank to keep each row's own booking #"></div>
                 <div class="field-row"><span class="field-label">Seal # override</span>
                     <input class="edit-input" id="f_seal" type="text" placeholder="Leave blank to keep each row's own seal #"></div>
+                <!-- Country of Origin sits in Shipment (not Financials/Buyer) because it
+                     conceptually belongs with the port fields — all four print together
+                     in the same PDF row (Country · Place of Receipt · Port of Loading · Port of Discharge). -->
+                <div class="field-row"><span class="field-label">Country of Origin</span>
+                    <input class="edit-input" id="f_country_origin" type="text" placeholder="USA"></div>
                 <div class="field-row"><span class="field-label">Port of Loading</span>
                     <input class="edit-input" id="f_pol" type="text" placeholder="—"></div>
                 <div class="field-row"><span class="field-label">Port of Discharge</span>
@@ -171,7 +197,6 @@
                 <div class="field-row"><span class="field-label">Place of Receipt</span>
                     <input class="edit-input" id="f_receipt" type="text" placeholder="—"></div>
             </div>
-
             <!-- Buyer + Vessel -->
             <div class="field-section">
                 <div class="section-title">Buyer</div>
@@ -186,7 +211,6 @@
                 <div class="field-row"><span class="field-label">Payment Terms</span>
                     <input class="edit-input" id="f_payment_terms" type="text" placeholder="e.g. T/T 100% Against Shipping Documents"></div>
             </div>
-
             <!-- Financials -->
             <div class="field-section full">
                 <div class="section-title">Financials</div>
@@ -195,12 +219,19 @@
                         <input class="edit-input" id="f_freight" type="text" placeholder="0.00"></div>
                     <div class="field-row"><span class="field-label">EFS</span>
                         <input class="edit-input" id="f_efs" type="text" placeholder="0.00"></div>
-                    <div class="field-row"><span class="field-label">Final Amount</span>
-                        <input class="edit-input hi" id="f_final" type="text" readonly placeholder="—"></div>
+                    <!-- Final Amount is now EDITABLE. The auto-calc still runs on every
+                         freight/EFS/note change UNTIL the user types something here —
+                         then a "manual override" latch flips and auto-calc leaves the
+                         field alone. The reset link below undoes the override so
+                         auto-calc resumes without needing a fresh search. -->
+                    <div class="field-row">
+                        <span class="field-label">Final Amount</span>
+                        <input class="edit-input hi" id="f_final" type="text" placeholder="—">
+                        <a class="reset-link" id="f_final_reset" onclick="resetFinalOverride()" title="Revert to computed total">↻ auto</a>
+                    </div>
                 </div>
             </div>
         </div>
-
         <!-- Line Items + Packing Weights -->
         <div class="line-items-wrapper" id="lineItemsWrapper" style="display:none;">
             <div class="line-items-title">Line Items &amp; Packing Weights — all cells editable</div>
@@ -227,7 +258,6 @@
                 <tbody id="lineItemsBody"></tbody>
             </table>
         </div>
-
         <!-- Invoice Notes -->
         <div class="field-section full" style="border-top:1px solid #f1f5f9;">
             <div class="section-title">Invoice Notes
@@ -240,11 +270,16 @@
         </div>
     </div>
 </div>
-
 <script>
     let currentContainer = '';
     let currentContainers = [];   // all containers combined into the current preview
     let containerChips = [];      // containers added via +Add, not yet searched
+    // Final Amount override latch. Flips true when the user types into f_final;
+    // resets to false on new search or explicit "↻ auto" click. When true,
+    // recalcFinal() leaves f_final alone — this is the whole point of allowing
+    // the override in the first place, otherwise every freight/EFS/note edit
+    // would silently trample the manually-entered value.
+    let finalOverrideActive = false;
 
     function renderContainerChips() {
         const wrap = document.getElementById('containerChips');
@@ -254,7 +289,6 @@
             </span>
         `).join('');
     }
-
     function addContainerChip() {
         const input = document.getElementById('containerInput');
         const val = input.value.trim().toUpperCase();
@@ -263,21 +297,98 @@
         input.value = '';
         renderContainerChips();
     }
-
     function removeContainerChip(idx) {
         containerChips.splice(idx, 1);
         renderContainerChips();
     }
-
     document.getElementById('containerInput').addEventListener('keydown', e => {
         if (e.key === 'Enter') doSearch();
     });
-
     ['f_freight','f_efs'].forEach(id => {
         document.getElementById(id).addEventListener('input', recalcFinal);
     });
+    // Detect manual entry in Final Amount — 'input' fires on every keystroke,
+    // including delete/backspace. Only setting the flag if there's actual
+    // content, so backspacing everything drops back to auto mode.
+    document.getElementById('f_final').addEventListener('input', function() {
+        const raw = this.value.replace(/[^0-9.-]/g, '').trim();
+        if (raw === '') {
+            finalOverrideActive = false;
+            this.classList.remove('override-active');
+            document.getElementById('f_final_reset').classList.remove('visible');
+            recalcFinal();   // resume auto-compute since field is now empty
+            syncLineAmountFromFinal();   // and reset the mirrored line amount too
+        } else {
+            finalOverrideActive = true;
+            this.classList.add('override-active');
+            document.getElementById('f_final_reset').classList.add('visible');
+            syncLineAmountFromFinal();
+        }
+    });
+    function resetFinalOverride() {
+        finalOverrideActive = false;
+        const el = document.getElementById('f_final');
+        el.classList.remove('override-active');
+        document.getElementById('f_final_reset').classList.remove('visible');
+        recalcFinal();
+        syncLineAmountFromFinal();
+    }
 
+    // Single-item Final Amount → line item Amount sync.
+    //
+    // Rule: when there is EXACTLY ONE line item AND freight/EFS/notes are all
+    // zero (i.e. Final Amount == line Amount by definition), any change to
+    // Final Amount is mirrored into the line's Amount cell. This is what
+    // makes a single-item invoice "just show what I typed" everywhere,
+    // instead of showing the computed line amount above a manually-set TOTAL.
+    //
+    // Guard rails, in order of subtlety:
+    //   * 0 line items → nothing to sync
+    //   * 2+ line items → we don't know how to split a single total across
+    //     multiple lines, so we leave them alone. Explicit user decision.
+    //   * freight > 0 OR efs > 0 OR any note row → Final Amount is
+    //     legitimately different from line Amount. Syncing would produce a
+    //     mathematically incoherent invoice (subtotal + notes − freight −
+    //     efs ≠ printed TOTAL). Skip sync in these cases; the total_override
+    //     path still handles the TOTAL row correctly on its own.
+    //
+    // On CLEAR (empty Final Amount), we restore the line's original computed
+    // amount from the preview snapshot — otherwise a manual entry followed by
+    // a clear would leave a stale value stuck in the line cell.
+    function syncLineAmountFromFinal() {
+        const rows = document.querySelectorAll('#lineItemsBody tr');
+        if (rows.length !== 1) return;
+
+        const freight = parseFloat(document.getElementById('f_freight').value.replace(/[^0-9.-]/g,'')) || 0;
+        const efs     = parseFloat(document.getElementById('f_efs').value.replace(/[^0-9.-]/g,'')) || 0;
+        const hasNotes = collectNoteRows().some(n => parseFloat(n.amount) !== 0);
+        if (freight !== 0 || efs !== 0 || hasNotes) return;
+
+        const amtInput = rows[0].querySelector('[data-field="amount"]');
+        if (!amtInput) return;
+
+        if (finalOverrideActive) {
+            // Mirror whatever's currently in Final Amount into the line row —
+            // both cells will render identically on the PDF.
+            const finalRaw = document.getElementById('f_final').value.replace(/[^0-9.-]/g,'').trim();
+            if (finalRaw === '') return;
+            const n = parseFloat(finalRaw);
+            if (isNaN(n)) return;
+            amtInput.value = '$' + n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+        } else {
+            // Restore the line's original computed value from the preview snapshot.
+            // Without this, resetting Final Amount would leave the stale
+            // override sitting in the line cell — silently wrong on the PDF.
+            const original = rows[0].dataset.originalAmount || '';
+            if (original) amtInput.value = original;
+        }
+    }
     function recalcFinal() {
+        // Respect the override — the whole point is not to overwrite the
+        // manual value on every freight/EFS/note change. The final Amount
+        // sent to the backend is still read straight from the input, so
+        // whichever mode is active, Download uses what the user sees.
+        if (finalOverrideActive) return;
         const sub     = parseFloat(window._subtotal || 0);
         const freight = parseFloat(document.getElementById('f_freight').value.replace(/[^0-9.-]/g,'')) || 0;
         const efs     = parseFloat(document.getElementById('f_efs').value.replace(/[^0-9.-]/g,'')) || 0;
@@ -285,7 +396,6 @@
         document.getElementById('f_final').value = '$' +
             (sub + notes - freight - efs).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
     }
-
     function addNoteRow(text, amount) {
         const row = document.createElement('div');
         row.className = 'field-row note-row';
@@ -299,7 +409,6 @@
         row.querySelector('[data-note-amount]').addEventListener('input', recalcFinal);
         document.getElementById('notesContainer').appendChild(row);
     }
-
     function collectLineItemOverrides() {
         return Array.from(document.querySelectorAll('#lineItemsBody tr')).map(tr => {
             const get = (field) => {
@@ -326,14 +435,12 @@
             };
         });
     }
-
     function collectNoteRows() {
         return Array.from(document.querySelectorAll('#notesContainer .note-row')).map(row => ({
             text:   row.querySelector('[data-note-text]').value.trim(),
             amount: row.querySelector('[data-note-amount]').value.replace(/[^0-9.-]/g,'').trim(),
         })).filter(n => n.text || n.amount);
     }
-
     async function doSearch() {
         // Typing + Enter/Search always folds whatever's in the box into the
         // chip list first — preserves the old single-container flow (type,
@@ -343,9 +450,7 @@
         if (pending && !containerChips.includes(pending)) containerChips.push(pending);
         document.getElementById('containerInput').value = '';
         renderContainerChips();
-
         if (containerChips.length === 0) return;
-
         showLoading(true); hidePreview(); hideError();
         try {
             const res  = await fetch('/api/preview', {
@@ -360,7 +465,6 @@
             currentContainers = data.container_nos || [data.container_no];
         } catch(e) { showLoading(false); showError('Network error. Please try again.'); }
     }
-
     async function doRefresh() {
         const btn = event.target;
         btn.textContent = 'Refreshing...'; btn.disabled = true;
@@ -370,14 +474,32 @@
             setTimeout(() => { btn.textContent = 'Refresh Sheet Data'; btn.disabled = false; }, 2500);
         } catch(e) { btn.textContent = 'Refresh Sheet Data'; btn.disabled = false; }
     }
-
     async function doDownload() {
         if (!currentContainers.length && !currentContainer) return;
         const separate = document.getElementById('separateCheck').checked;
         const btn = event.target;
         btn.textContent = separate ? 'Generating...' : 'Downloading...';
         btn.disabled = true;
+        // Consignee override — only include when the user actually
+        // changed the field. Sending it always would silently regress
+        // every historical invoice: the PDF uses Google Doc's canonical
+        // name by default (e.g. "TAEWON AUTOMOTIVE CO., LTD"), but the
+        // sheet may store the short form ("TAEWON AUTOMOTIVE") which
+        // would then start printing on every generation.
+        const consigneeEl       = document.getElementById('f_consignee');
+        const consigneeCurrent  = consigneeEl.value.trim();
+        const consigneeOriginal = (consigneeEl.dataset.original || '').trim();
+        const consigneeOverride = (consigneeCurrent && consigneeCurrent !== consigneeOriginal)
+            ? consigneeCurrent
+            : '';
 
+        // Only send total_override when the user has actually taken over the
+        // field; otherwise the backend should compute normally. Sending the
+        // auto-computed value back to the backend would trigger the audit
+        // annotation for no reason.
+        const totalOverrideRaw = finalOverrideActive
+            ? v('f_final').replace(/[^0-9.-]/g, '')
+            : '';
         // Collect all editable overrides
         const overrides = {
             container_nos:    currentContainers.length ? currentContainers : [currentContainer],
@@ -390,15 +512,17 @@
             reference:        v('f_reference'),
             booking_no:       v('f_booking'),
             seal_no:          v('f_seal'),
+            country_of_origin:v('f_country_origin'),
+            consignee_override: consigneeOverride,
             port_loading:     v('f_pol'),
             port_discharge:   v('f_pod'),
             place_of_receipt: v('f_receipt'),
             freight:          v('f_freight').replace(/[^0-9.-]/g,''),
             efs:              v('f_efs').replace(/[^0-9.-]/g,''),
+            total_override:   totalOverrideRaw,
             note_rows:        collectNoteRows(),
             line_items_override: collectLineItemOverrides(),
         };
-
         try {
             const res = await fetch('/api/generate', {
                 method:'POST', headers:{'Content-Type':'application/json'},
@@ -419,14 +543,19 @@
         } catch(e) { showError('Download failed. Please try again.'); }
         btn.textContent = 'Download PDF'; btn.disabled = false;
     }
-
     function renderPreview(data) {
         document.getElementById('notesContainer').innerHTML = '';   // notes are per-invoice — don't leak across searches
         document.getElementById('f_payment_terms').value = '';      // no sheet column backs this — must not leak across searches either
+        // Reset the Final Amount override latch on every new search — otherwise
+        // an override typed for container A would silently persist into
+        // container B's preview (same reason we clear payment_terms/notes above).
+        finalOverrideActive = false;
+        const finalEl = document.getElementById('f_final');
+        finalEl.classList.remove('override-active');
+        document.getElementById('f_final_reset').classList.remove('visible');
         document.getElementById('previewTitle').textContent = `Invoice ${data.container_no}`;
         const p = data.preview || {};
         const inv = p.invoice || {}, ship = p.shipment || {}, buyer = p.buyer || {}, fin = p.financials || {};
-
         const isMultiContainer = (data.container_nos || []).length > 1;
         set('f_inv_no',    inv['Invoice No']   || '');
         set('f_inv_date',  inv['Invoice Date'] || '');
@@ -439,22 +568,29 @@
         // touching this field, recreating the exact bug this session fixed.
         set('f_booking', isMultiContainer ? '' : (ship['Booking #'] || ''));
         set('f_seal',    isMultiContainer ? '' : (ship['Seal #']    || ''));
+        // Country of Origin: prefill from preview if backend sends it, otherwise
+        // leave blank so the PDF falls back to its "USA" default. Empty here
+        // means "use the default" — same convention as every other port field.
+        set('f_country_origin', ship['Country of Origin'] || '');
         set('f_pol',       ship['Port of Loading']   || '');
         set('f_pod',       ship['Port of Discharge'] || '');
         set('f_receipt',   ship['Place of Receipt']  || '');
         set('f_consignee', buyer['Company'] || '');
+        // Stash the original consignee from the sheet — on Download we
+        // compare against the current value and only send a
+        // consignee_override when the user actually changed it. Empty
+        // override means "keep the Google Doc's canonical name" (existing
+        // behavior); non-empty means "print exactly what I typed."
+        document.getElementById('f_consignee').dataset.original = buyer['Company'] || '';
         set('f_terms',     buyer['Terms']   || '');
-
         const fRaw = (fin['Freight Deduction'] || '').replace('$','').replace(/,/g,'').replace('—','');
         const eRaw = (fin['EFS']               || '').replace('$','').replace(/,/g,'').replace('—','');
         set('f_freight', fRaw);
         set('f_efs',     eRaw);
-
         window._subtotal = (data.line_items || []).reduce((s, item) => {
             return s + parseFloat((item.amount || '0').replace('$','').replace(/,/g,'') || 0);
         }, 0);
         recalcFinal();
-
         // Line items
         const tbody = document.getElementById('lineItemsBody');
         const wrapper = document.getElementById('lineItemsWrapper');
@@ -469,6 +605,11 @@
                 tr.dataset.containerNo = item.container_no || '';
                 tr.dataset.bookingNo   = item.booking_no   || '';
                 tr.dataset.sealNo      = item.seal_no      || '';
+                // Snapshot the original computed amount so the single-item
+                // Final Amount sync can restore it on clear/reset — otherwise
+                // clearing the Final Amount would leave the mirrored override
+                // stuck in the line cell.
+                tr.dataset.originalAmount = item.amount || '';
                 tr.innerHTML = `
                     <td><span class="row-badge">${idx+1}</span></td>
                     <td><span style="font-size:11px;color:#64748b;">${esc(item.container_no || '—')}</span></td>
@@ -492,10 +633,144 @@
         } else {
             wrapper.style.display = 'none';
         }
-
         document.getElementById('previewCard').style.display = 'block';
-    }
 
+        // "Load previous edits" banner. Only shown if backend reports a
+        // saved generation for this container. Stashing the load token on
+        // the banner element itself so loadSavedOverrides() can find it
+        // without needing a module-level variable that could go stale.
+        const banner    = document.getElementById('loadSavedBanner');
+        const bannerMsg = document.getElementById('loadSavedMsg');
+        const saved     = data.saved_overrides;
+        if (saved && saved.load_token) {
+            const when = formatSavedTimestamp(saved.saved_at_iso);
+            const vTag = saved.total_versions > 1
+                ? ` <span style="opacity:0.7">· ${saved.total_versions} versions saved</span>`
+                : '';
+            bannerMsg.innerHTML = `You last generated this container on <b>${esc(when)}</b>. Load those edits into the form?${vTag}`;
+            banner.dataset.loadToken = saved.load_token;
+            banner.classList.add('visible');
+        } else {
+            banner.classList.remove('visible');
+            banner.dataset.loadToken = '';
+        }
+    }
+    function formatSavedTimestamp(iso) {
+        if (!iso) return 'a previous date';
+        try {
+            const d = new Date(iso);
+            if (isNaN(d.getTime())) return iso;
+            // Show localized date + time, dropping seconds — noisy for humans.
+            return d.toLocaleString(undefined, {
+                year:'numeric', month:'short', day:'numeric',
+                hour:'2-digit', minute:'2-digit'
+            });
+        } catch(e) { return iso; }
+    }
+    function dismissSavedBanner() {
+        document.getElementById('loadSavedBanner').classList.remove('visible');
+    }
+    async function loadSavedOverrides() {
+        // Fetch the full saved body and overlay it onto the current form.
+        // Values not in the saved body stay untouched — preserves whatever
+        // the fresh preview populated.
+        const banner = document.getElementById('loadSavedBanner');
+        const token  = banner.dataset.loadToken;
+        if (!token) return;
+        const btn = banner.querySelector('.btn-load');
+        const originalLabel = btn.textContent;
+        btn.textContent = 'Loading...'; btn.disabled = true;
+        try {
+            const res = await fetch('/api/load-saved/' + encodeURIComponent(token));
+            if (!res.ok) throw new Error('load failed');
+            const record = await res.json();
+            const body = record.body || {};
+            applySavedBody(body);
+            btn.textContent = '✓ Loaded';
+            setTimeout(() => banner.classList.remove('visible'), 1200);
+        } catch(e) {
+            btn.textContent = originalLabel; btn.disabled = false;
+            showError('Could not load previous edits.');
+        }
+    }
+    function applySavedBody(body) {
+        // Overlay saved overrides onto the current form. Field-by-field
+        // rather than a loop because IDs don't 1:1 match body keys
+        // (e.g. body.freight → f_freight, body.port_loading → f_pol).
+        // Keeps the mapping explicit — grep-friendly if a new field is
+        // added later and needs to be included here too.
+        if ('vessel'            in body) set('vesselInput',    body.vessel);
+        if ('terms'             in body) set('f_terms',        body.terms);
+        if ('payment_terms'     in body) set('f_payment_terms', body.payment_terms);
+        if ('inv_no'            in body) set('f_inv_no',       body.inv_no);
+        if ('inv_date'          in body) set('f_inv_date',     body.inv_date);
+        if ('reference'         in body) set('f_reference',    body.reference);
+        if ('booking_no'        in body) set('f_booking',      body.booking_no);
+        if ('seal_no'           in body) set('f_seal',         body.seal_no);
+        if ('country_of_origin' in body) set('f_country_origin', body.country_of_origin);
+        // Consignee override coming from a saved generation. Set the field
+        // AND mark it dirty by nulling out .dataset.original — that way, on
+        // the next Download, our "did the user edit this?" check treats it
+        // as edited (which it was, in the past session).
+        if ('consignee_override' in body && body.consignee_override) {
+            const cel = document.getElementById('f_consignee');
+            cel.value = body.consignee_override;
+            cel.dataset.original = '';   // force "edited" state on next Download
+        }
+        if ('port_loading'      in body) set('f_pol',          body.port_loading);
+        if ('port_discharge'    in body) set('f_pod',          body.port_discharge);
+        if ('place_of_receipt'  in body) set('f_receipt',      body.place_of_receipt);
+        if ('freight'           in body) set('f_freight',      body.freight);
+        if ('efs'               in body) set('f_efs',          body.efs);
+
+        // Notes: clear and re-add from saved body. This drops any notes
+        // the user may have manually added since search — that's fine,
+        // "load previous edits" is a full-form action, not a merge.
+        document.getElementById('notesContainer').innerHTML = '';
+        (body.note_rows || []).forEach(n => addNoteRow(n.text, n.amount));
+
+        // Line item overrides: same pattern. Iterate the currently-rendered
+        // rows (which reflect the container's actual line items) and, for
+        // each, look for a matching saved entry by position — descriptions
+        // may have been edited, so index-based match is more reliable than
+        // string match. If the count differs (rare: sheet row was added or
+        // removed since last save), we apply what we can and skip the rest.
+        const rows = document.querySelectorAll('#lineItemsBody tr');
+        (body.line_items_override || []).forEach((saved, i) => {
+            if (i >= rows.length) return;
+            const tr = rows[i];
+            const fields = ['item_desc','weight','price','amount',
+                            'gross_weight_lbs','truck_lbs','container_tare',
+                            'chassis_lbs','boxes_lbs','net_weight_lbs','net_weight_mt'];
+            fields.forEach(f => {
+                if (f in saved) {
+                    const el = tr.querySelector(`[data-field="${f}"]`);
+                    if (el) el.value = saved[f] || '';
+                }
+            });
+        });
+
+        // Total override — apply last so recalcFinal doesn't overwrite it,
+        // and flip the override latch so the amber tint appears + backend
+        // gets total_override on next Download.
+        if (body.total_override && body.total_override.trim()) {
+            const finalEl = document.getElementById('f_final');
+            const n = parseFloat(body.total_override);
+            if (!isNaN(n)) {
+                finalEl.value = '$' + n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+                finalOverrideActive = true;
+                finalEl.classList.add('override-active');
+                document.getElementById('f_final_reset').classList.add('visible');
+            }
+        } else {
+            // Saved body had no override — make sure the latch is off so
+            // recalcFinal repopulates from freight/EFS/notes we just set.
+            finalOverrideActive = false;
+            document.getElementById('f_final').classList.remove('override-active');
+            document.getElementById('f_final_reset').classList.remove('visible');
+            recalcFinal();
+        }
+    }
     function v(id)      { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
     function set(id, val) { const el = document.getElementById(id); if (el) el.value = val || ''; }
     function esc(s)     { return (s || '').replace(/"/g, '&quot;'); }
