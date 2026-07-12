@@ -120,8 +120,8 @@ body{font-family:var(--font-sans);color:var(--steel-700);width:816px}
         <tr style="background:var(--leaf-600);">
           <th style="text-align:left;padding:12px 14px;font-family:var(--font-sans);font-size:11px;letter-spacing:0.03em;color:#fff;font-weight:600;width:116px;border-top-left-radius:8px;">Container No</th>
           <th style="text-align:left;padding:12px 14px;font-family:var(--font-sans);font-size:11px;letter-spacing:0.03em;color:#fff;font-weight:600;">Description</th>
-          <th style="text-align:right;padding:12px 14px;font-family:var(--font-sans);font-size:11px;letter-spacing:0.03em;color:#fff;font-weight:600;white-space:nowrap;">Qty (MT)</th>
-          <th style="text-align:right;padding:12px 14px;font-family:var(--font-sans);font-size:11px;letter-spacing:0.03em;color:#fff;font-weight:600;white-space:nowrap;">Rate US$/MT</th>
+          <th style="text-align:right;padding:12px 14px;font-family:var(--font-sans);font-size:11px;letter-spacing:0.03em;color:#fff;font-weight:600;white-space:nowrap;">Qty ({{ qty_unit }})</th>
+          <th style="text-align:right;padding:12px 14px;font-family:var(--font-sans);font-size:11px;letter-spacing:0.03em;color:#fff;font-weight:600;white-space:nowrap;">Rate US$/{{ qty_unit }}</th>
           <th style="text-align:right;padding:12px 14px;font-family:var(--font-sans);font-size:11px;letter-spacing:0.03em;color:#fff;font-weight:600;white-space:nowrap;border-top-right-radius:8px;">Amount US$</th>
         </tr>
       </thead>
@@ -134,15 +134,15 @@ body{font-family:var(--font-sans);color:var(--steel-700);width:816px}
           <td rowspan="{{ cont['items']|length }}" style="padding:11px 14px;border-bottom:{{ '2px solid var(--leaf-600)' if outer_loop.last else '1px solid var(--steel-200)' }};border-right:1px solid var(--steel-100);vertical-align:top;background:var(--leaf-50);font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--leaf-700);">{{ cont.container_no }}</td>
           {% endif %}
           <td style="padding:11px 14px;border-bottom:{{ '2px solid var(--leaf-600)' if (outer_loop.last and loop.last) else '1px solid var(--steel-100)' }};color:var(--steel-800);">{{ item.desc }}</td>
-          <td style="padding:11px 14px;border-bottom:{{ '2px solid var(--leaf-600)' if (outer_loop.last and loop.last) else '1px solid var(--steel-100)' }};text-align:right;font-family:var(--font-mono);color:var(--steel-700);">{{ "%.2f"|format(item.qty) }}</td>
-          <td style="padding:11px 14px;border-bottom:{{ '2px solid var(--leaf-600)' if (outer_loop.last and loop.last) else '1px solid var(--steel-100)' }};text-align:right;font-family:var(--font-mono);color:var(--steel-700);">${{ "%.0f"|format(item.rate) }}</td>
-          <td style="padding:11px 14px;border-bottom:{{ '2px solid var(--leaf-600)' if (outer_loop.last and loop.last) else '1px solid var(--steel-100)' }};text-align:right;font-family:var(--font-mono);font-weight:500;color:var(--steel-950);">${{ "{:,.2f}".format(item.qty*item.rate) }}</td>
+          <td style="padding:11px 14px;border-bottom:{{ '2px solid var(--leaf-600)' if (outer_loop.last and loop.last) else '1px solid var(--steel-100)' }};text-align:right;font-family:var(--font-mono);color:var(--steel-700);">{{ item.qty_fmt }}</td>
+          <td style="padding:11px 14px;border-bottom:{{ '2px solid var(--leaf-600)' if (outer_loop.last and loop.last) else '1px solid var(--steel-100)' }};text-align:right;font-family:var(--font-mono);color:var(--steel-700);">{{ item.rate_fmt }}</td>
+          <td style="padding:11px 14px;border-bottom:{{ '2px solid var(--leaf-600)' if (outer_loop.last and loop.last) else '1px solid var(--steel-100)' }};text-align:right;font-family:var(--font-mono);font-weight:500;color:var(--steel-950);">{{ item.amount_fmt }}</td>
         </tr>
           {% endfor %}
         {% endfor %}
         <tr>
           <td colspan="2" style="padding:10px 14px;font-family:var(--font-mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--steel-500);">Total Quantity</td>
-          <td style="padding:10px 14px;text-align:right;font-family:var(--font-mono);font-weight:600;color:var(--leaf-700);">{{ "%.2f"|format(total_qty) }}</td>
+          <td style="padding:10px 14px;text-align:right;font-family:var(--font-mono);font-weight:600;color:var(--leaf-700);">{{ total_qty_fmt }}</td>
           <td style="padding:10px 14px;"></td>
           <td style="padding:10px 14px;"></td>
         </tr>
@@ -182,19 +182,22 @@ body{font-family:var(--font-sans);color:var(--steel-700);width:816px}
     </div>
 
     <div style="display:flex;justify-content:space-between;margin-top:38px;">
-      <div style="width:calc(50% - 40px);">
+      <div style="width:calc(50% - 40px);display:flex;flex-direction:column;height:112px;">
         <div style="font-family:var(--font-mono);font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--steel-400);margin-bottom:4px;">Seller</div>
-        <div style="font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--steel-950);margin-bottom:8px;">Edge Metals Inc.</div>
+        <div style="font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--steel-950);">Edge Metals Inc.</div>
+        <div style="flex:1;"></div>
         {% if signature_img %}
-        <img src="{{ signature_img }}" style="height:34px;display:block;margin-bottom:2px;" />
+        <img src="{{ signature_img }}" style="height:34px;display:block;margin-bottom:2px;align-self:flex-start;" />
         {% else %}
         <div style="height:34px;margin-bottom:2px;"></div>
         {% endif %}
         <div style="border-top:2px solid var(--leaf-500);padding-top:6px;font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--steel-400);">Authorized Signature</div>
       </div>
-      <div style="width:calc(50% - 40px);">
+      <div style="width:calc(50% - 40px);display:flex;flex-direction:column;height:112px;">
         <div style="font-family:var(--font-mono);font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--steel-400);margin-bottom:4px;">Buyer</div>
-        <div style="font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--steel-950);margin-bottom:44px;">{{ consignee_name }}</div>
+        <div style="font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--steel-950);">{{ consignee_name }}</div>
+        <div style="flex:1;"></div>
+        <div style="height:34px;margin-bottom:2px;"></div>
         <div style="border-top:2px solid var(--leaf-500);padding-top:6px;font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--steel-400);">Authorized Signature</div>
       </div>
     </div>
