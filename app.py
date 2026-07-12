@@ -10,16 +10,134 @@ import os
 import csv
 import io
 import glob
+import json
 import tempfile
 import shutil
 import requests
 import zipfile
+from datetime import datetime
 
 app = Flask(__name__)
 
 # Configuration
 GOOGLE_SHEET_ID = "1QsCeuqeRKODuouzO2PfKbxG9qJpN8yAbIurSzhI--6s"
 MAIN_SHEET_GID  = "571096144"
+
+# ─────────────────────────────────────────────────────────────────────
+#  GENERATED-INVOICE PERSISTENCE
+# ─────────────────────────────────────────────────────────────────────
+# Every successful /api/generate saves the POST body + metadata as JSON
+# on disk, keyed by the (sorted) container list. On subsequent previews,
+# the UI is told whether saved overrides exist so it can offer to reload
+# them. Rationale: users edit invoices days or weeks later; re-typing
+# every override from scratch is error-prone. The saved JSON IS the
+# source of truth for "what did the user last generate for this
+# container?" — no PDF-parsing, no ambiguity.
+#
+# Format:
+#   generated/{container_key}__{iso_timestamp}.json
+# where container_key = "_".join(sorted(container_nos_upper)).
+# Sorting means multi-container invoices resolve to the same file
+# regardless of the order they were originally entered.
+#
+# No cleanup/rotation today — sub-100 invoices/month × ~5KB each is
+# negligible even after 10 years. If this ever grows unexpectedly, add
+# a nightly cron to prune files older than N months; but the on-request
+# path stays simple.
+
+GENERATED_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "generated")
+os.makedirs(GENERATED_DIR, exist_ok=True)
+
+
+def _container_key(container_nos):
+    """Canonical filesystem key for a container list. Sorted so search
+    order doesn't matter — searching 'B, A' finds saved edits for 'A, B'."""
+    return "_".join(sorted(c.upper().strip() for c in container_nos if c and c.strip()))
+
+
+def save_generation_state(container_nos, body):
+    """Persist the exact POST body that produced a PDF, plus a timestamp.
+
+    Called AFTER successful PDF generation. Non-fatal: if the save fails
+    (disk full, permissions), the download still returns to the user —
+    we just log and move on. Losing history is annoying; losing the
+    download would be a regression.
+    """
+    try:
+        key = _container_key(container_nos)
+        if not key:
+            return
+        ts = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+        path = os.path.join(GENERATED_DIR, f"{key}__{ts}.json")
+        record = {
+            "container_key": key,
+            "container_nos": sorted(c.upper().strip() for c in container_nos),
+            "saved_at_utc":  ts,
+            "saved_at_iso":  datetime.utcnow().isoformat() + "Z",
+            "body":          body,
+        }
+        with open(path, "w") as f:
+            json.dump(record, f, indent=2)
+        print(f"💾 Saved generation state: {path}")
+    except Exception as e:
+        # Don't propagate — download must not fail because we couldn't
+        # persist state.
+        print(f"⚠️  Could not save generation state: {e}")
+
+
+def load_latest_generation(container_nos):
+    """Return the most-recent saved state for these containers, or None.
+
+    Used by /api/preview to tell the UI whether to show the "Load previous
+    edits" banner. Returns a small metadata dict; the full body is loaded
+    on demand by /api/load-saved to keep the preview response small.
+    """
+    try:
+        key = _container_key(container_nos)
+        if not key:
+            return None
+        pattern = os.path.join(GENERATED_DIR, f"{key}__*.json")
+        matches = sorted(glob.glob(pattern), reverse=True)   # newest first
+        if not matches:
+            return None
+        latest_path = matches[0]
+        with open(latest_path) as f:
+            record = json.load(f)
+        # Return metadata only — the actual body ships via /api/load-saved.
+        # The path name (not the record contents) is the load token — that
+        # way even if the file is corrupt, listing still works.
+        return {
+            "container_key":  record.get("container_key", key),
+            "saved_at_iso":   record.get("saved_at_iso", ""),
+            "total_versions": len(matches),
+            "load_token":     os.path.basename(latest_path),   # filename-only, not full path
+        }
+    except Exception as e:
+        print(f"⚠️  Could not load saved state: {e}")
+        return None
+
+
+def load_saved_by_token(load_token):
+    """Fetch the full body for a specific saved generation.
+
+    load_token is the raw filename returned by load_latest_generation —
+    NOT a user-supplied path. We defend against directory traversal by
+    rejecting anything with a path separator or leading dot.
+    """
+    if not load_token or "/" in load_token or "\\" in load_token or load_token.startswith("."):
+        return None
+    if not load_token.endswith(".json"):
+        return None
+    path = os.path.join(GENERATED_DIR, load_token)
+    if not os.path.isfile(path):
+        return None
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except Exception:
+        return None
+
+
 
 def read_google_sheet():
     """Read Google Sheet via CSV export."""
@@ -313,6 +431,14 @@ def api_preview():
                 "Container #":        ", ".join(container_nos),
                 "Booking #":          line_items[0]["booking_no"] if line_items else "N/A",
                 "Seal #":             line_items[0]["seal_no"] if line_items else "N/A",
+                # Country of Origin has no source column in the packing sheet
+                # (or the main sheet) — Edge Metals is a US exporter so the
+                # PDF-side default is already "USA". Sending "USA" here lets
+                # the UI prefill it as an editable field, so the user only
+                # needs to touch it in the rare case a shipment originates
+                # elsewhere. Backend still treats blank as "use the default"
+                # — an empty POST value doesn't override anything.
+                "Country of Origin":  "USA",
                 "Port of Loading":    port_loading,
                 "Port of Discharge":  port_dis or "TO BE ADVISED",
                 "Place of Receipt":   place_of_receipt,
@@ -331,7 +457,26 @@ def api_preview():
             }
         },
         "line_items": line_items,
+        # Tell the UI whether previously-generated edits exist for these
+        # containers. Small metadata only — actual body loads via /api/load-saved
+        # when the user clicks the banner. Absent key = no history (UI stays quiet).
+        "saved_overrides": load_latest_generation(container_nos),
     })
+
+
+@app.route("/api/load-saved/<load_token>")
+def api_load_saved(load_token):
+    """Return the full saved POST body for a specific past generation.
+
+    load_token comes from the saved_overrides.load_token that /api/preview
+    returned — an opaque-ish filename the client just echoes back. Path
+    traversal is defended against in load_saved_by_token (no slashes, no
+    leading dots, must end in .json, must exist inside GENERATED_DIR).
+    """
+    record = load_saved_by_token(load_token)
+    if not record:
+        return jsonify({"error": "Saved state not found."}), 404
+    return jsonify(record)
 
 
 @app.route("/api/generate", methods=["POST"])
@@ -353,6 +498,9 @@ def api_generate():
     receipt_override = body.get("place_of_receipt", "").strip()
     freight_override = body.get("freight",          "").strip()
     efs_override     = body.get("efs",              "").strip()
+    country_override = body.get("country_of_origin", "").strip()
+    total_override   = body.get("total_override",    "").strip()
+    consignee_override = body.get("consignee_override", "").strip()
     line_items_override = body.get("line_items_override", [])
     note_rows           = body.get("note_rows", [])
 
@@ -408,6 +556,21 @@ def api_generate():
         if receipt_override:  cmd += ["--place-of-receipt", receipt_override]
         if freight_override:  cmd += ["--freight",          freight_override]
         if efs_override:      cmd += ["--efs",              efs_override]
+        # Country of Origin: skip-when-empty (not __CLEAR__) — empty means
+        # "use the PDF's default of USA", not "force blank". Matches the same
+        # pattern as port_loading/discharge above rather than the inv_no
+        # forced-clear pattern; a blank country row on the PDF would be a
+        # customs red flag, so we specifically do NOT allow it to be blanked.
+        if country_override:  cmd += ["--country-of-origin", country_override]
+        # Total override: skip-when-empty too. When set, invoice_gen.py
+        # prints the value silently (no annotation on the PDF). Empty here
+        # = normal computed total.
+        if total_override:    cmd += ["--total-override",    total_override]
+        # Consignee override — only forwarded when the UI marked it dirty
+        # (see dataset.original comparison in generate.html). Empty means
+        # "use the Google Doc canonical name" (existing behavior — a blank
+        # override MUST NOT print an empty buyer name, hence skip-when-empty).
+        if consignee_override: cmd += ["--consignee-override", consignee_override]
 
         if line_items_override:
             import json
@@ -446,6 +609,12 @@ def api_generate():
                         zipf.writestr(os.path.basename(pdf_file), pf.read())
             zip_buffer.seek(0)
             shutil.rmtree(temp_dir, ignore_errors=True)
+            # Persist AFTER we know generation succeeded — no point storing
+            # state for a failed run. Save happens before returning the file
+            # so a network hiccup between save and download doesn't leave us
+            # with a downloaded PDF and no matching saved state (which would
+            # break the whole "reload previous edits" flow).
+            save_generation_state(container_nos, body)
             return send_file(
                 zip_buffer,
                 mimetype="application/zip",
@@ -458,6 +627,9 @@ def api_generate():
                 pdf_buffer = io.BytesIO(f.read())
             shutil.rmtree(temp_dir, ignore_errors=True)
             pdf_buffer.seek(0)
+            # Same save point as the ZIP branch above — kept in sync so
+            # combined and separate downloads produce identical history.
+            save_generation_state(container_nos, body)
             return send_file(
                 pdf_buffer,
                 mimetype="application/pdf",
@@ -498,6 +670,9 @@ def api_preview_pdf():
     receipt_override = body.get("place_of_receipt", "").strip()
     freight_override = body.get("freight",          "").strip()
     efs_override     = body.get("efs",              "").strip()
+    country_override = body.get("country_of_origin", "").strip()
+    total_override   = body.get("total_override",    "").strip()
+    consignee_override = body.get("consignee_override", "").strip()
     line_items_override = body.get("line_items_override", [])
     note_rows           = body.get("note_rows", [])
 
@@ -534,6 +709,12 @@ def api_preview_pdf():
         if receipt_override:  cmd += ["--place-of-receipt", receipt_override]
         if freight_override:  cmd += ["--freight",          freight_override]
         if efs_override:      cmd += ["--efs",              efs_override]
+        # Kept in sync with api_generate — inline preview and final download
+        # must produce identical PDFs; any override skipped here would show
+        # the user one PDF and hand them a different one on Download.
+        if country_override:  cmd += ["--country-of-origin", country_override]
+        if total_override:    cmd += ["--total-override",    total_override]
+        if consignee_override: cmd += ["--consignee-override", consignee_override]
 
         if line_items_override:
             import json
@@ -569,385 +750,3 @@ def api_preview_pdf():
     except Exception as e:
         shutil.rmtree(temp_dir, ignore_errors=True)
         return jsonify({"error": f"Error: {str(e)}"}), 500
-
-
-
-
-@app.route("/api/debug-row/<container_no>")
-def api_debug_row(container_no):
-    """Debug: show ALL column values for a container row with indices."""
-    matched, headers, _ = find_all_container_rows(container_no)
-    if not matched:
-        return jsonify({"error": f"Container {container_no} not found"})
-
-    row_num, row = matched[0]
-    result = {}
-    for i, val in enumerate(row):
-        result[f"col_{i:02d}"] = val
-
-    # Highlight likely freight columns
-    highlights = {
-        "col_19": row[19] if len(row) > 19 else "OUT OF RANGE",
-        "col_20": row[20] if len(row) > 20 else "OUT OF RANGE",
-        "col_21": row[21] if len(row) > 21 else "OUT OF RANGE",
-        "col_22": row[22] if len(row) > 22 else "OUT OF RANGE",
-        "col_23": row[23] if len(row) > 23 else "OUT OF RANGE",
-        "col_24": row[24] if len(row) > 24 else "OUT OF RANGE",
-        "col_25": row[25] if len(row) > 25 else "OUT OF RANGE",
-    }
-    return jsonify({
-        "row_number": row_num,
-        "total_columns": len(row),
-        "cols_19_to_25": highlights,
-        "all_columns": result,
-    })
-
-# ── REPLACE the verify section in app.py with this ───────────────────────────
-# Replaces: extract_statement_records, read_sheet_hbl_map, api_verify
-
-import pdfplumber
-import re as _re
-from datetime import datetime
-from collections import defaultdict
-
-def extract_statement_records(pdf_bytes):
-    """
-    Extract HBL number, amount AND date from ZIMEX GLT statement PDF.
-    Returns list of dicts: {hbl, amount, date}
-    Multiple rows with same HBL are kept separate (will be summed later).
-    """
-    records = []
-    seen_lines = set()
-
-    with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
-        for page in pdf.pages:
-            text = page.extract_text() or ""
-            for line in text.split('\n'):
-                m = _re.search(
-                    r'(\d{2}/\d{2}/\d{4})\s+GLTOER-\d+\s+(GLTOEH-\d+)\s+GLTINV-\d+\s+([\d,]+\.00)',
-                    line
-                )
-                if m:
-                    date_str = m.group(1)
-                    hbl      = m.group(2).strip()
-                    amount   = float(m.group(3).replace(',', ''))
-                    key      = (date_str, hbl, amount)
-                    if key not in seen_lines:
-                        seen_lines.add(key)
-                        try:
-                            date = datetime.strptime(date_str, "%m/%d/%Y")
-                        except:
-                            date = None
-                        records.append({"hbl": hbl, "amount": amount, "date": date})
-
-    return records
-
-
-def read_sheet_hbl_map():
-    """
-    Read Google Sheet and return HBL -> total freight amount.
-    Sums multiple rows with the same HBL number.
-    """
-    headers, rows = read_google_sheet()
-    if not rows:
-        return {}
-
-    hbl_totals = defaultdict(float)
-
-    for row in rows:
-        hbl         = safe_get(row, 3, "").strip()
-        freight_raw = safe_get(row, 21, "0").replace(",", "").replace("$", "").strip()
-        if not hbl:
-            continue
-        try:
-            freight = float(freight_raw) if freight_raw else 0.0
-        except:
-            freight = 0.0
-        if freight > 0:
-            hbl_totals[hbl] += freight
-
-    return dict(hbl_totals)
-
-
-@app.route("/api/verify", methods=["POST"])
-def api_verify():
-    try:
-        pdf_files    = request.files.getlist("pdf_files")
-        year_str     = request.form.get("year",  "").strip()
-        month_str    = request.form.get("month", "").strip()
-
-        if not pdf_files:
-            return jsonify({"error": "No PDF files uploaded."}), 400
-
-        filter_year  = int(year_str)  if year_str.isdigit()  else None
-        filter_month = int(month_str) if month_str.isdigit() else None
-
-        print(f"[VERIFY] Filter: year={filter_year} month={filter_month}")
-
-        # Extract all records from PDFs
-        all_records = []
-        for pdf_file in pdf_files:
-            try:
-                records = extract_statement_records(pdf_file.read())
-                all_records.extend(records)
-                print(f"[VERIFY] {pdf_file.filename}: {len(records)} records")
-            except Exception as e:
-                print(f"[VERIFY] Failed: {pdf_file.filename}: {e}")
-
-        if not all_records:
-            return jsonify({"error": "No records extracted from uploaded PDFs."}), 422
-
-        # Apply month/year filter
-        if filter_year or filter_month:
-            filtered = []
-            for r in all_records:
-                d = r.get("date")
-                if d is None:
-                    filtered.append(r)
-                    continue
-                if (filter_year  is None or d.year  == filter_year) and \
-                   (filter_month is None or d.month == filter_month):
-                    filtered.append(r)
-            print(f"[VERIFY] After filter: {len(filtered)}/{len(all_records)}")
-            all_records = filtered
-
-        if not all_records:
-            return jsonify({
-                "total_pdf": 0, "matched": 0, "missing": [], "mismatch": [],
-                "info": f"No records found for {filter_month}/{filter_year} in the uploaded PDF."
-            })
-
-        # Sum PDF amounts by HBL
-        pdf_hbl_totals = defaultdict(float)
-        pdf_hbl_dates  = {}  # HBL -> earliest date string
-        for r in all_records:
-            hbl = r["hbl"]
-            pdf_hbl_totals[hbl] += r["amount"]
-            if hbl not in pdf_hbl_dates and r["date"]:
-                pdf_hbl_dates[hbl] = r["date"].strftime("%m/%d/%Y")
-
-        # Load sheet HBL totals (already summed)
-        sheet_hbl_totals = read_sheet_hbl_map()
-
-        # Compare
-        matched  = []
-        missing  = []
-        mismatch = []
-
-        for hbl, pdf_total in pdf_hbl_totals.items():
-            date_s = pdf_hbl_dates.get(hbl, "—")
-
-            if hbl not in sheet_hbl_totals:
-                missing.append({
-                    "hbl"       : hbl,
-                    "date"      : date_s,
-                    "pdf_amount": f"${pdf_total:,.2f}",
-                })
-            elif abs(sheet_hbl_totals[hbl] - pdf_total) > 0.01:
-                mismatch.append({
-                    "hbl"         : hbl,
-                    "date"        : date_s,
-                    "pdf_amount"  : f"${pdf_total:,.2f}",
-                    "sheet_amount": f"${sheet_hbl_totals[hbl]:,.2f}",
-                    "difference"  : f"${abs(sheet_hbl_totals[hbl] - pdf_total):,.2f}",
-                })
-            else:
-                matched.append(hbl)
-
-        print(f"[VERIFY] HBLs: total={len(pdf_hbl_totals)} matched={len(matched)} missing={len(missing)} mismatch={len(mismatch)}")
-
-        return jsonify({
-            "total_pdf": len(pdf_hbl_totals),
-            "matched"  : len(matched),
-            "missing"  : missing,
-            "mismatch" : mismatch,
-        })
-
-    except Exception as e:
-        import traceback
-        print(f"[VERIFY] Error:\n{traceback.format_exc()}")
-        return jsonify({"error": str(e)}), 500
-
-GEMINI_API_KEY_BACKEND = "AQ.Ab8RN6KzHJnCcTocHKXzx3DbYOTMnlil85ww3SCbeY55A1Hp1A"
-
-@app.route("/api/proforma-smartfill", methods=["POST"])
-def api_proforma_smartfill():
-    """
-    Parse natural-language shipment note and return dc-2 form JSON.
-    Input:  { "text": "taewon confirmed 3 containers AL combo @1150 and regular combo @695" }
-    Output: dc-2 fields + containers array (qty aggregated per commodity).
-    """
-    import re, json as _json
-    body = request.get_json(force=True) or {}
-    text = body.get("text", "").strip()
-    if not text:
-        return jsonify({"error": "No text provided"}), 400
-
-    prompt = f"""You are a trade-document parser for Edge Metals Inc., a US scrap metal exporter.
-
-Parse the following natural-language shipment note and return ONLY a valid JSON object — no markdown, no explanation, no code fences.
-
-Input: "{text}"
-
-Rules:
-- consignee: match to known buyers (use FULL legal name):
-    "Taewon Automotive Co., Ltd." — keywords: taewon, tae won
-    "ZIMEX Co., Ltd." — keywords: zimex
-    "Daehan Smelting Co., Ltd." — keywords: daehan
-  If unrecognised, use the name as given.
-- items: array of {{"desc": string, "qty_per_container": number, "rate": number}}
-  qty_per_container is MT per container. Default 21 if not stated.
-  Map product names: "al combo" -> "AL Combo", "regular combo" -> "Regular Combo",
-  "auto cast" -> "Auto Cast", "auto parts" -> "Scrap Auto Parts"
-- num_containers: integer. Default 1.
-- trade_terms: e.g. "TT · CIF Busan, South Korea". Infer from consignee country if not stated.
-- port_discharge: infer from consignee country if not stated (Korea -> "Busan, South Korea")
-- currency: always "US Dollar ($)"
-- payment_term: default "T/T 100% Against Shipping Documents"
-- shipment_allowance: default "+/- 10% on weights"
-- packaging: default "Loose"
-- country_of_origin: default "USA"
-- memo: any special instructions (e.g. "MMR Required"), else ""
-- inv_date: today as MM/DD/YYYY
-
-Return exactly:
-{{
-  "consignee": "",
-  "inv_date": "",
-  "trade_terms": "",
-  "currency": "US Dollar ($)",
-  "port_discharge": "",
-  "payment_term": "",
-  "shipment_allowance": "",
-  "packaging": "Loose",
-  "country_of_origin": "USA",
-  "memo": "",
-  "num_containers": 1,
-  "items": [{{"desc": "", "qty_per_container": 0, "rate": 0}}]
-}}"""
-
-    try:
-        import requests as req
-        resp = req.post(
-            f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY_BACKEND}",
-            json={"contents": [{"parts": [{"text": prompt}]}]},
-            timeout=25
-        )
-        resp.raise_for_status()
-        raw = resp.json()["candidates"][0]["content"]["parts"][0]["text"]
-        raw = re.sub(r"```json|```", "", raw).strip()
-        parsed = _json.loads(raw)
-    except Exception as e:
-        return jsonify({"error": f"Gemini parse failed: {e}"}), 500
-
-    # Build containers array
-    num_c = int(parsed.get("num_containers", 1))
-    items = parsed.get("items", [])
-    containers = []
-    for i in range(num_c):
-        containers.append({
-            "container_no": f"(Container {i+1})",
-            "items": [
-                {
-                    "desc":   it.get("desc", ""),
-                    "qty":    float(it.get("qty_per_container", 21)),
-                    "rate":   float(it.get("rate", 0)),
-                    "amount": float(it.get("qty_per_container", 21)) * float(it.get("rate", 0))
-                }
-                for it in items
-            ]
-        })
-
-    # Consignee address lookup
-    consignee = parsed.get("consignee", "")
-    consignee_address = []
-    if consignee:
-        try:
-            invoice_gen_path = os.path.join(os.path.dirname(__file__), "invoice_gen.py")
-            import importlib.util
-            spec = importlib.util.spec_from_file_location("invoice_gen", invoice_gen_path)
-            ig = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(ig)
-            consignee_address = ig.get_buyer_address(consignee, ig.read_address_lookup(ig.ADDRESS_DOC_ID))
-        except Exception:
-            pass
-
-    from datetime import date
-    today = date.today()
-    inv_no = f"EM-PI-{today.strftime('%Y%m%d')}"
-
-    return jsonify({
-        "inv_no":             inv_no,
-        "inv_date":           parsed.get("inv_date", today.strftime("%m/%d/%Y")),
-        "consignee":          consignee,
-        "consignee_address":  consignee_address,
-        "buyer_po":           "",
-        "purchase_person":    "Marc Kang",
-        "prepared_by":        "Marc Kang",
-        "currency":           parsed.get("currency", "US Dollar ($)"),
-        "trade_terms":        parsed.get("trade_terms", ""),
-        "port_discharge":     parsed.get("port_discharge", ""),
-        "payment_term":       parsed.get("payment_term", "T/T 100% Against Shipping Documents"),
-        "shipment_allowance": parsed.get("shipment_allowance", "+/- 10% on weights"),
-        "packaging":          parsed.get("packaging", "Loose"),
-        "country_of_origin":  parsed.get("country_of_origin", "USA"),
-        "freight_label":      "CIF (freight included)",
-        "memo":               parsed.get("memo", ""),
-        "bank_beneficiary":   "Edge Metals Inc.",
-        "bank_name":          "",
-        "bank_account_swift": "",
-        "containers":         containers,
-    })
-
-
-@app.route("/api/generate-proforma-dc2", methods=["POST"])
-def api_generate_proforma_dc2():
-    """Generate dc-2 style proforma PDF (spec-list, aggregated commodities)."""
-    body = request.get_json(force=True) or {}
-    if not body:
-        return jsonify({"error": "No data provided."}), 400
-
-    consignee = body.get("consignee", "").strip()
-    if consignee and not body.get("consignee_address"):
-        try:
-            invoice_gen_path = os.path.join(os.path.dirname(__file__), "invoice_gen.py")
-            import importlib.util
-            spec = importlib.util.spec_from_file_location("invoice_gen", invoice_gen_path)
-            ig = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(ig)
-            body["consignee_address"] = ig.get_buyer_address(consignee, ig.read_address_lookup(ig.ADDRESS_DOC_ID))
-        except Exception:
-            body["consignee_address"] = []
-
-    inv_no   = body.get("inv_no", "PROFORMA").replace("/", "_").replace(" ", "_")
-    temp_dir = tempfile.mkdtemp()
-    out_path = os.path.join(temp_dir, f"{inv_no}_PROFORMA.pdf")
-
-    try:
-        invoice_gen_path = os.path.join(os.path.dirname(__file__), "invoice_gen.py")
-        import importlib.util
-        spec = importlib.util.spec_from_file_location("invoice_gen", invoice_gen_path)
-        ig = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(ig)
-        ig.generate_proforma_pdf_dc2(body, out_path)
-
-        with open(out_path, "rb") as f:
-            pdf_bytes = io.BytesIO(f.read())
-        shutil.rmtree(temp_dir, ignore_errors=True)
-        pdf_bytes.seek(0)
-        return send_file(pdf_bytes, mimetype="application/pdf",
-                         as_attachment=True,
-                         download_name=f"{inv_no}_PROFORMA.pdf")
-    except Exception as e:
-        shutil.rmtree(temp_dir, ignore_errors=True)
-        import traceback
-        print(f"\n❌ DC2 ERROR:\n{traceback.format_exc()}")
-        return jsonify({"error": str(e)}), 500
-
-
-if __name__ == "__main__":
-    print("\n🚀 Edge Metals Invoice Portal")
-    print("=" * 50)
-    print("Server: http://localhost:5000")
-    print("=" * 50)
-    app.run(debug=True, port=5000, host='0.0.0.0')
