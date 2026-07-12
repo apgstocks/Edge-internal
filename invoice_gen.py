@@ -247,6 +247,36 @@ def format_rate(value) -> str:
     return f"${d:,f}"
 
 
+def wrap_text_to_width(text: str, max_width: float, font: str, font_size: float) -> list:
+    """Word-wrap text to fit max_width. Returns list of lines (min 1).
+
+    Used for the Description column in every line-items table (invoice, invoice-only,
+    packing list). ReportLab's drawCentredString has no wrapping — a long
+    description would silently overflow the cell and collide with neighboring
+    columns. This pre-splits at word boundaries; the caller then grows row height
+    to fit len(lines) * line_height. A single word longer than max_width is
+    kept on its own line rather than character-split, since commodity descriptions
+    are always real words and mid-word breaks would look broken.
+    """
+    from reportlab.pdfbase.pdfmetrics import stringWidth
+    text = safe_str(text)
+    if not text:
+        return [""]
+    words = text.split()
+    if not words:
+        return [""]
+    lines, current = [], words[0]
+    for word in words[1:]:
+        candidate = current + " " + word
+        if stringWidth(candidate, font, font_size) <= max_width:
+            current = candidate
+        else:
+            lines.append(current)
+            current = word
+    lines.append(current)
+    return lines
+
+
 def eval_freight(expr: str) -> float:
     import re
     expr = expr.replace(",", "").replace("$", "").strip()
@@ -533,6 +563,58 @@ def row_to_dict(row: list) -> Dict[str, Any]:
 
 
 # ═══════════════════════════════════════════════
+#  LINE-ITEMS TABLE HELPERS
+# ═══════════════════════════════════════════════
+#
+# Constants for wrap-aware row rendering. Extracted so all three renderers
+# (draw_mk_trading_invoice / draw_invoice_only / draw_packing_list_only)
+# share the same visual rhythm — if you tune LINE_H or MIN_ROW_H in one
+# place, packing list and invoice stay in sync.
+DESC_LINE_H  = 3.2 * mm   # vertical gap between wrapped description lines
+DESC_MIN_ROW = 8   * mm   # single-line row height (matches pre-wrap default)
+DESC_PAD     = 1.5 * mm   # horizontal padding inside description cell
+
+
+def draw_line_item_row(c_obj, row_vals, col_widths, desc_col_idx, margin, y, base_row_h=DESC_MIN_ROW):
+    """Draw one line-item row with description-column word-wrap.
+
+    Row height grows dynamically to fit however many wrapped description
+    lines are needed; every other column centers vertically within the
+    resulting box, so short columns don't look stranded at the top when
+    the description takes 3+ lines. Returns the new `y` after the row.
+
+    Deliberately NOT integrated with the packing list at present — packing
+    descriptions are short by convention (mapped commodity names) so paying
+    the wrap cost there gives near-zero visual benefit. Kept generic in case
+    that changes later.
+    """
+    desc_text = row_vals[desc_col_idx]
+    desc_w    = col_widths[desc_col_idx] - DESC_PAD * 2
+
+    desc_lines = wrap_text_to_width(desc_text, desc_w, "Helvetica", 7)
+    # Row height = padding + N text lines + padding; floor at MIN so single-line
+    # rows stay identical to the pre-wrap layout (no visual regression).
+    row_h = max(base_row_h, len(desc_lines) * DESC_LINE_H + 3 * mm)
+
+    x = margin
+    c_obj.setFillColor(colors.black)
+    for i, (val, w) in enumerate(zip(row_vals, col_widths)):
+        c_obj.rect(x, y - row_h, w, row_h, fill=0, stroke=1)
+        c_obj.setFont("Helvetica", 7)
+        if i == desc_col_idx:
+            # Vertically center the multi-line block: compute total block height,
+            # then start the FIRST line at (row_center + block_height/2 - one_line).
+            total_text_h = len(desc_lines) * DESC_LINE_H
+            first_y = y - (row_h - total_text_h) / 2 - DESC_LINE_H + 1 * mm
+            for j, line in enumerate(desc_lines):
+                c_obj.drawCentredString(x + w / 2, first_y - j * DESC_LINE_H, line)
+        else:
+            c_obj.drawCentredString(x + w / 2, y - row_h / 2 - 1 * mm, val)
+        x += w
+    return y - row_h
+
+
+# ═══════════════════════════════════════════════
 #  PDF GENERATION - MK TRADING TEMPLATE
 # ═══════════════════════════════════════════════
 
@@ -596,15 +678,27 @@ def draw_note_rows(c_obj, data, margin, y, col_widths, row_h):
     return y, notes_sum
 
 
-def draw_summary_rows(c_obj, margin, y, col_widths, row_h, subtotal, notes_sum, freight, efs, LIGHT_BLUE):
+def draw_summary_rows(c_obj, margin, y, col_widths, row_h, subtotal, notes_sum, freight, efs, LIGHT_BLUE, total_override=None):
     """Draw FREIGHT DEDUCTION / EFS / TOTAL rows below the line items (and notes, if any).
 
     Merged into one label-cell + one amount-cell per row — same grid convention as
     draw_note_rows() — instead of 8 separate boxes with 5 left empty. The old
     per-column version left 4-5 blank bordered cells per row, which read as a
     broken/fragmented grid once a merged note row sat directly above it.
-    Returns (new_y, final_amt).
+
+    total_override: when a non-None number, the printed TOTAL uses that value
+    instead of the computed (subtotal + notes − freight − efs). The override
+    is printed silently — no visible marker on the PDF — so the printed
+    invoice matches exactly what the user typed in the UI. This is a
+    deliberate product decision: the UI's amber tint on the Final Amount
+    field is the sole audit signal, and it does not survive PDF generation.
+    Passing None (default) preserves the pre-existing computed behavior
+    exactly — no behavior change for callers that don't opt in.
+
+    Returns (new_y, final_amt) where final_amt is the value actually printed.
     """
+    computed = subtotal + notes_sum - freight - efs
+
     def _row(label, amount_str, tint=None, bold_amt=False):
         nonlocal y
         text_w = sum(col_widths[:-1])
@@ -624,7 +718,7 @@ def draw_summary_rows(c_obj, margin, y, col_widths, row_h, subtotal, notes_sum, 
     if efs > 0:
         _row("EFS", f"-${efs:,.2f}")
 
-    final_amt = subtotal + notes_sum - freight - efs
+    final_amt = float(total_override) if total_override is not None else computed
     _row("TOTAL", f"${final_amt:,.2f}", tint=LIGHT_BLUE, bold_amt=True)
 
     return y, final_amt
@@ -757,9 +851,20 @@ def draw_mk_trading_invoice(c_obj, data, page_width, page_height, packing_lookup
     c_obj.rect(left_x, y - buyer_val_h, left_w, buyer_val_h, fill=0, stroke=1)
     consignee_name = safe_str(data.get("consignee", ""))
     addr_lines = get_buyer_address(consignee_name, address_lookup or {})
+    # Consignee override: when the user edits the Company field in the UI,
+    # that value prints as the buyer name on the PDF. Address lines below
+    # are STILL looked up from the Google Doc using consignee_name — the
+    # override only replaces the display name on line 1, not the address
+    # data source. When unset, we keep the historical behavior of using
+    # the Doc's first line (which is the "canonical" formal name for that
+    # buyer) — that way years of previously-generated invoices stay
+    # visually consistent for any invoice generated without touching the
+    # field. Same skip-when-empty pattern as country_of_origin.
+    consignee_override = safe_str(data.get("consignee_override", "")).strip()
     if addr_lines:
         c_obj.setFont("Helvetica-Bold", 9)
-        c_obj.drawString(left_x + 2 * mm, y - 4 * mm, addr_lines[0].strip())
+        display_name = consignee_override if consignee_override else addr_lines[0].strip()
+        c_obj.drawString(left_x + 2 * mm, y - 4 * mm, display_name)
         c_obj.setFont("Helvetica", 7)
         for i, line in enumerate(addr_lines[1:7]):
             c_obj.drawString(left_x + 2 * mm, y - (8 + i * 3.5) * mm, line.strip())
@@ -827,7 +932,7 @@ def draw_mk_trading_invoice(c_obj, data, page_width, page_height, packing_lookup
                                         "TO BE ADVISED").upper()
 
     four_cells = [
-        ("Country of Origin",           COUNTRY_OF_ORIGIN),
+        ("Country of Origin",           safe_str(data.get("country_of_origin", "")).upper() or COUNTRY_OF_ORIGIN),
         ("Place of Receipt by Carrier", place_of_receipt),
         ("Port of Loading",             port_loading),
         ("Port of Discharge",           port_discharge),
@@ -861,6 +966,7 @@ def draw_mk_trading_invoice(c_obj, data, page_width, page_height, packing_lookup
         width * 0.05, width * 0.12, width * 0.14, width * 0.10,
         width * 0.20, width * 0.10, width * 0.12, width * 0.17,
     ]
+    DESC_COL_IDX = 4   # keep in sync with the "Description" position in tbl_headers
 
     # Pull line_items built by rows_to_invoice_data(); fall back for old callers
     line_items = data.get("line_items")
@@ -903,7 +1009,7 @@ def draw_mk_trading_invoice(c_obj, data, page_width, page_height, packing_lookup
         c_obj.setFillColor(LIGHT_BLUE)
     y -= 8 * mm
 
-    # One data row per line item
+    # One data row per line item — row height grows with wrapped description
     subtotal = 0.0
     for s_no, item in enumerate(line_items, start=1):
         weight    = item["weight"]
@@ -927,14 +1033,7 @@ def draw_mk_trading_invoice(c_obj, data, page_width, page_height, packing_lookup
             f"${inv_amt:,.2f}",
         ]
 
-        x = margin
-        c_obj.setFillColor(colors.black)
-        for val, w in zip(row_vals, col_widths):
-            c_obj.rect(x, y - 8 * mm, w, 8 * mm, fill=0, stroke=1)
-            c_obj.setFont("Helvetica", 7)
-            c_obj.drawCentredString(x + w / 2, y - 5 * mm, val)
-            x += w
-        y -= 8 * mm
+        y = draw_line_item_row(c_obj, row_vals, col_widths, DESC_COL_IDX, margin, y)
 
     # Note rows (user-added) — rendered after line items, before deductions
     y, notes_sum = draw_note_rows(c_obj, data, margin, y, col_widths, 7 * mm)
@@ -946,8 +1045,14 @@ def draw_mk_trading_invoice(c_obj, data, page_width, page_height, packing_lookup
     efs         = eval_freight(efs_raw) if efs_raw else 0.0
     row_h       = 7 * mm
 
+    # Total override — passed through from CLI/UI. Kept as None (not 0.0) when
+    # unset so a legitimate $0 override could theoretically be distinguished
+    # from "no override" — safe_float would collapse both to 0.0 and hide it.
+    total_override_raw = safe_str(data.get("total_override", ""))
+    total_override     = safe_float(total_override_raw) if total_override_raw else None
     y, final_amt = draw_summary_rows(c_obj, margin, y, col_widths, row_h,
-                                      subtotal, notes_sum, freight, efs, LIGHT_BLUE)
+                                      subtotal, notes_sum, freight, efs, LIGHT_BLUE,
+                                      total_override=total_override)
     y -= 3 * mm
 
     # ═════════════════════════════════════════════════════════════════════════
@@ -1232,9 +1337,20 @@ def draw_invoice_only(c_obj, data, page_width, page_height, packing_lookup=None,
     c_obj.rect(left_x, y - buyer_val_h, left_w, buyer_val_h, fill=0, stroke=1)
     consignee_name = safe_str(data.get("consignee", ""))
     addr_lines = get_buyer_address(consignee_name, address_lookup or {})
+    # Consignee override: when the user edits the Company field in the UI,
+    # that value prints as the buyer name on the PDF. Address lines below
+    # are STILL looked up from the Google Doc using consignee_name — the
+    # override only replaces the display name on line 1, not the address
+    # data source. When unset, we keep the historical behavior of using
+    # the Doc's first line (which is the "canonical" formal name for that
+    # buyer) — that way years of previously-generated invoices stay
+    # visually consistent for any invoice generated without touching the
+    # field. Same skip-when-empty pattern as country_of_origin.
+    consignee_override = safe_str(data.get("consignee_override", "")).strip()
     if addr_lines:
         c_obj.setFont("Helvetica-Bold", 9)
-        c_obj.drawString(left_x + 2 * mm, y - 4 * mm, addr_lines[0].strip())
+        display_name = consignee_override if consignee_override else addr_lines[0].strip()
+        c_obj.drawString(left_x + 2 * mm, y - 4 * mm, display_name)
         c_obj.setFont("Helvetica", 7)
         for i, line in enumerate(addr_lines[1:7]):
             c_obj.drawString(left_x + 2 * mm, y - (8 + i * 3.5) * mm, line.strip())
@@ -1301,7 +1417,7 @@ def draw_invoice_only(c_obj, data, page_width, page_height, packing_lookup=None,
                                         "TO BE ADVISED").upper()
 
     four_cells = [
-        ("Country of Origin",           COUNTRY_OF_ORIGIN),
+        ("Country of Origin",           safe_str(data.get("country_of_origin", "")).upper() or COUNTRY_OF_ORIGIN),
         ("Place of Receipt by Carrier", place_of_receipt),
         ("Port of Loading",             port_loading),
         ("Port of Discharge",           port_discharge),
@@ -1330,6 +1446,7 @@ def draw_invoice_only(c_obj, data, page_width, page_height, packing_lookup=None,
         width * 0.05, width * 0.12, width * 0.14, width * 0.10,
         width * 0.20, width * 0.10, width * 0.12, width * 0.17,
     ]
+    DESC_COL_IDX = 4   # keep in sync with the "Description" position in tbl_headers
 
     line_items = data.get("line_items")
     if not line_items:
@@ -1388,14 +1505,7 @@ def draw_invoice_only(c_obj, data, page_width, page_height, packing_lookup=None,
             format_rate(inv_price),
             f"${inv_amt:,.2f}",
         ]
-        x = margin
-        c_obj.setFillColor(colors.black)
-        for val, w in zip(row_vals, col_widths):
-            c_obj.rect(x, y - 8 * mm, w, 8 * mm, fill=0, stroke=1)
-            c_obj.setFont("Helvetica", 7)
-            c_obj.drawCentredString(x + w / 2, y - 5 * mm, val)
-            x += w
-        y -= 8 * mm
+        y = draw_line_item_row(c_obj, row_vals, col_widths, DESC_COL_IDX, margin, y)
 
     # Note rows (user-added) — rendered after line items, before deductions
     y, notes_sum = draw_note_rows(c_obj, data, margin, y, col_widths, 7 * mm)
@@ -1406,8 +1516,13 @@ def draw_invoice_only(c_obj, data, page_width, page_height, packing_lookup=None,
     efs         = eval_freight(efs_raw) if efs_raw else 0.0
     row_h       = 7 * mm
 
+    # Same total-override wiring as the combined renderer — kept in sync so
+    # `--separate` and combined output show identical TOTAL values.
+    total_override_raw = safe_str(data.get("total_override", ""))
+    total_override     = safe_float(total_override_raw) if total_override_raw else None
     y, final_amt = draw_summary_rows(c_obj, margin, y, col_widths, row_h,
-                                      subtotal, notes_sum, freight, efs, LIGHT_BLUE)
+                                      subtotal, notes_sum, freight, efs, LIGHT_BLUE,
+                                      total_override=total_override)
     y -= 3 * mm
 
     # ── Footer (no packing list) ──────────────────────────────────────────────
@@ -1571,9 +1686,20 @@ def draw_packing_list_only(c_obj, data, page_width, page_height, packing_lookup=
     c_obj.rect(left_x, y - buyer_val_h, left_w, buyer_val_h, fill=0, stroke=1)
     consignee_name = safe_str(data.get("consignee", ""))
     addr_lines = get_buyer_address(consignee_name, address_lookup or {})
+    # Consignee override: when the user edits the Company field in the UI,
+    # that value prints as the buyer name on the PDF. Address lines below
+    # are STILL looked up from the Google Doc using consignee_name — the
+    # override only replaces the display name on line 1, not the address
+    # data source. When unset, we keep the historical behavior of using
+    # the Doc's first line (which is the "canonical" formal name for that
+    # buyer) — that way years of previously-generated invoices stay
+    # visually consistent for any invoice generated without touching the
+    # field. Same skip-when-empty pattern as country_of_origin.
+    consignee_override = safe_str(data.get("consignee_override", "")).strip()
     if addr_lines:
         c_obj.setFont("Helvetica-Bold", 9)
-        c_obj.drawString(left_x + 2 * mm, y - 4 * mm, addr_lines[0].strip())
+        display_name = consignee_override if consignee_override else addr_lines[0].strip()
+        c_obj.drawString(left_x + 2 * mm, y - 4 * mm, display_name)
         c_obj.setFont("Helvetica", 7)
         for i, line in enumerate(addr_lines[1:7]):
             c_obj.drawString(left_x + 2 * mm, y - (8 + i * 3.5) * mm, line.strip())
@@ -1640,7 +1766,7 @@ def draw_packing_list_only(c_obj, data, page_width, page_height, packing_lookup=
                                         "TO BE ADVISED").upper()
 
     four_cells = [
-        ("Country of Origin",           COUNTRY_OF_ORIGIN),
+        ("Country of Origin",           safe_str(data.get("country_of_origin", "")).upper() or COUNTRY_OF_ORIGIN),
         ("Place of Receipt by Carrier", place_of_receipt),
         ("Port of Loading",             port_loading),
         ("Port of Discharge",           port_discharge),
@@ -1666,6 +1792,10 @@ def draw_packing_list_only(c_obj, data, page_width, page_height, packing_lookup=
     y -= spacer_h
 
     # ── PACKING TABLE — one row per line item ────────────────────────────────
+    # Description col intentionally sits at index 1 here (unlike the invoice
+    # tables at index 4) — draw_line_item_row is column-agnostic, we just
+    # pass DESC_COL_IDX = 1 below. The other 8 columns are all short numeric
+    # weights that fit fine without wrap.
     pack_cols = [
         ("S.No",                  width * 0.05),
         ("Description",           width * 0.17),
@@ -1678,6 +1808,8 @@ def draw_packing_list_only(c_obj, data, page_width, page_height, packing_lookup=
         ("Net Weight\n(lbs)",     width * 0.12),
         ("Net Weight\n(MT)",      width * 0.11),
     ]
+    pack_col_widths = [w for _, w in pack_cols]
+    PACK_DESC_COL_IDX = 1
 
     # Column headers
     c_obj.setFillColor(LIGHT_BLUE)
@@ -1704,7 +1836,6 @@ def draw_packing_list_only(c_obj, data, page_width, page_height, packing_lookup=
     total_net_mt  = 0.0
 
     # One data row per line item — match packing row by description, within its OWN container
-    row_h = 8 * mm
     for s_no, item in enumerate(line_items, start=1):
         item_container_key = safe_str(item.get("container_no", "")).upper().strip() or default_container_key
         packing_rows = (packing_lookup or {}).get(item_container_key, [])
@@ -1740,16 +1871,15 @@ def draw_packing_list_only(c_obj, data, page_width, page_height, packing_lookup=
             p_gross, p_truck, p_tare, p_chas, p_box, p_nlbs, p_nmt,
         ]
 
-        x = margin
-        c_obj.setFillColor(colors.black)
-        for val, (lbl, w) in zip(row_vals, pack_cols):
-            c_obj.rect(x, y - row_h, w, row_h, fill=0, stroke=1)
-            c_obj.setFont("Helvetica", 7)
-            c_obj.drawCentredString(x + w / 2, y - row_h / 2 - 1 * mm, val)
-            x += w
-        y -= row_h
+        # Wrap-aware row: pack list uses base_row_h=8mm (matches its previous
+        # fixed row_h), grows if description wraps. The TOTAL row below still
+        # uses the fixed 8mm — it doesn't have a wrapping description column,
+        # so keeping it fixed keeps the summary tight.
+        y = draw_line_item_row(c_obj, row_vals, pack_col_widths, PACK_DESC_COL_IDX,
+                               margin, y, base_row_h=8 * mm)
 
-    # Totals row — sum of all line item weights
+    # Totals row — sum of all line item weights (fixed height, no wrap needed)
+    row_h = 8 * mm
     x = margin
     for i, (lbl, w) in enumerate(pack_cols):
         c_obj.setFillColor(LIGHT_BLUE)
@@ -1865,6 +1995,9 @@ def main():
     parser.add_argument("--place-of-receipt", default="", help="Place of receipt override")
     parser.add_argument("--freight",          default="", help="Freight charge override")
     parser.add_argument("--efs",              default="", help="EFS charge override")
+    parser.add_argument("--country-of-origin",default="", help="Country of Origin override (default: USA)")
+    parser.add_argument("--total-override",   default="", help="Manually override the printed TOTAL; printed as-is with no annotation")
+    parser.add_argument("--consignee-override",default="", help="Override the printed buyer/consignee name on the PDF; address lines still come from the Google Doc lookup")
     parser.add_argument("--output",           default="invoices", help="Output directory")
     parser.add_argument("--extra-containers", nargs="*", default=[], help="Additional container numbers")
     parser.add_argument("--line-items-file",  default="", help="Path to JSON file with line item overrides")
@@ -1897,6 +2030,9 @@ def main():
             "place_of_receipt": getattr(args, "place_of_receipt", ""),
             "freight_charge":   getattr(args, "freight",          ""),
             "efs":              getattr(args, "efs",              ""),
+            "country_of_origin":getattr(args, "country_of_origin",""),
+            "total_override":   getattr(args, "total_override",   ""),
+            "consignee_override": getattr(args, "consignee_override", ""),
         }
         for k, v in overrides.items():
             if v == "__CLEAR__":
@@ -2143,6 +2279,19 @@ def draw_proforma_invoice_dc2(c, data: Dict[str, Any], page_w: float, page_h: fl
     num_containers = len(data.get("containers", []))
     container_label = f"{num_containers} \u00d7 40\u2032 HC"
 
+    # ── Unit detection: MT vs LBS ────────────────────────────────────
+    # If ANY raw line item's qty (before aggregation across containers)
+    # exceeds 10,000 we treat the whole document as LBS. Checked on the
+    # raw per-container items, not the aggregated `comms` totals, so a
+    # single small commodity doesn't get relabeled just because it was
+    # summed across many containers. Mirrors the same threshold/logic
+    # used in the HTML/WeasyPrint dc-2 renderer for consistency.
+    qty_unit = "LBS" if any(
+        float(item.get("qty", 0) or 0) > 10000
+        for cont in data.get("containers", [])
+        for item in cont.get("items", [])
+    ) else "MT"
+
     # ── Logo + name inline ────────────────────────────────────────
     logo_sz=12*mm; co_name="Edge Metals"; co_size=20; gap=3*mm
     name_w = c.stringWidth(co_name, FH, co_size)
@@ -2222,11 +2371,12 @@ def draw_proforma_invoice_dc2(c, data: Dict[str, Any], page_w: float, page_h: fl
     for i,(desc,v) in enumerate(comms.items()):
         spec_row("Commodity" if i==0 else "", desc)
     for i,(desc,v) in enumerate(comms.items()):
-        spec_row("Rate" if i==0 else "", f"${v['rate']:,.2f} / MT")
+        spec_row("Rate" if i==0 else "", f"{format_rate(v['rate'])} / {qty_unit}")
     spec_row("Currency",               safe_str(data.get("currency","US Dollar ($)")))
     spec_row("Trade Terms",            safe_str(data.get("trade_terms","")))
     for i,(desc,v) in enumerate(comms.items()):
-        spec_row("Quantity (Weight)" if i==0 else "", f"{v['qty']:.0f} MT  ({desc})")
+        qty_disp = f"{v['qty']:,.0f}" if qty_unit == "LBS" else f"{v['qty']:.0f}"
+        spec_row("Quantity (Weight)" if i==0 else "", f"{qty_disp} {qty_unit}  ({desc})")
     spec_row("Quantity (Containers)",  container_label)
     spec_row("Packaging",              safe_str(data.get("packaging","Loose")))
     spec_row("Shipment Qty. Allowance",safe_str(data.get("shipment_allowance","+/- 10% on weights")))
@@ -2241,11 +2391,14 @@ def draw_proforma_invoice_dc2(c, data: Dict[str, Any], page_w: float, page_h: fl
     c.setFillColor(GREEN_LT)
     c.roundRect(L, y-box_h, W, box_h, 3*mm, fill=1, stroke=0)
     frt=safe_str(data.get("freight_label","CIF (freight included)"))
+    def _qty_disp(q):
+        return f"{q:,.0f}" if qty_unit == "LBS" else f"{q:.0f}"
+
     if len(comms)==1:
         desc0,v0=next(iter(comms.items()))
-        subtitle=f"{v0['qty']:.0f} MT \u00d7 ${v0['rate']:,.2f} / MT  \u00b7  {frt}"
+        subtitle=f"{_qty_disp(v0['qty'])} {qty_unit} \u00d7 {format_rate(v0['rate'])} / {qty_unit}  \u00b7  {frt}"
     else:
-        parts=" + ".join(f"{v['qty']:.0f} MT \u00d7 ${v['rate']:,.2f}" for v in comms.values())
+        parts=" + ".join(f"{_qty_disp(v['qty'])} {qty_unit} \u00d7 {format_rate(v['rate'])}" for v in comms.values())
         subtitle=f"{parts}  \u00b7  {frt}"
     c.setFont(FBD,7); c.setFillColor(GREEN_MID)
     c.drawString(L+5*mm, y-5*mm, "ESTIMATED TOTAL AMOUNT")
